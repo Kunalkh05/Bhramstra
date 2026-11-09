@@ -15,6 +15,7 @@ from brahmastra.cli.commands.models import models_app
 from brahmastra.cli.commands.usage import usage_app
 from brahmastra.cli.commands.route import route_command, run_command_handler
 from brahmastra.cli.commands.analyze import analyze_command
+from brahmastra.cli.commands.patch import patch_app
 
 app = typer.Typer(
     name="brahmastra",
@@ -29,6 +30,7 @@ app.add_typer(provider_app, name="provider")
 app.add_typer(key_app, name="key")
 app.add_typer(models_app, name="models")
 app.add_typer(usage_app, name="usage")
+app.add_typer(patch_app, name="patch")
 
 # Standalone top-level commands
 app.command(name="route")(route_command)

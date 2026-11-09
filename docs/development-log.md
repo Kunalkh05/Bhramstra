@@ -312,6 +312,50 @@ This document records chronological progress, architectural decisions, commands 
 - Milestone 9 will introduce User-Approved Patches, Unified Diff Review, and Explicit Confirmation Gates before any file edits or commands are applied.
 
 ### Next Step
-- Milestone 9: User-approved patches, diff review, and explicit command approval.
+- Milestone 9: User-approved patches, diff review, and explicit command approval (Completed below).
+
+---
+
+## [2026-11-09] — Milestone 9: User-Approved Patches, Diff Review & Explicit Command Approval
+
+### Objectives
+1. Implement pure domain `DiffEngine` generating standard unified diffs with exact addition/deletion counts using Python's `difflib`.
+2. Enforce strict canonical path boundary validation preventing directory traversal attacks (`../`, `/etc/passwd`) and protecting sensitive directories (`.git`, `.brahmastra`) and config files (`.env`, `*.db`, `*.key`).
+3. Build atomic patch application mechanism creating temporary backup snapshots with instant rollback support if an error or rejection occurs.
+4. Implement `CommandPolicyEngine` to analyze and categorize shell commands into `SAFE_READ`, `MODERATE`, and `DANGEROUS` (detecting `rm -rf`, `sudo`, `mkfs`, fork bombs, piping curl to shell).
+5. Build interactive confirmation gates with Rich syntax highlighting (`rich.syntax.Syntax` monokai diffs) requiring explicit user confirmation before touching disk or executing shell commands.
+6. Provide non-interactive `--yes` option with safety overrides (blocking auto-execution of highly dangerous commands).
+7. Author hermetic unit tests covering diff generation, path traversal blocking, protected path enforcement, atomic rollback, command policies, and CLI workflows; verify 100% pass rate.
+
+### Actions Taken
+- Created domain models in `src/brahmastra/domain/patch/models.py` (`FilePatch`, `PatchStatus`, `ShellCommandAction`, `CommandStatus`, `CommandRiskLevel`).
+- Built `DiffEngine` in `src/brahmastra/domain/patch/diff_engine.py`:
+  - `generate_unified_diff` with line statistics.
+  - `validate_safe_path` resolving canonical paths against root boundary.
+  - Atomic writing via temporary files and backup creation for rollback.
+- Built `CommandPolicyEngine` in `src/brahmastra/domain/patch/command_policy.py` identifying destructive patterns.
+- Created application use cases in `src/brahmastra/application/use_cases/patch_use_cases.py`.
+- Built CLI command group `patch` in `src/brahmastra/cli/commands/patch.py` (`preview`, `apply`, `eval-cmd`) with confirmation gates and syntax-highlighted diff panels.
+- Registered `patch` subcommand group in `src/brahmastra/cli/app.py`.
+- Authored 18 new unit tests in `tests/unit/test_diff_engine.py`, `tests/unit/test_command_policy.py`, and `tests/unit/test_patch_cli.py`.
+
+### Test Results
+- Command run: `.venv/bin/pytest -v`
+- Result: **84 passed in 1.03s (100% pass rate, 0 warnings)**
+  - Diff engine generation, boundary validation, and rollback: 7 passed
+  - Command risk evaluation: 5 passed
+  - Patch CLI flows and approval gates: 6 passed
+  - Total full suite: 84 passed
+- Live verification:
+  - `brahmastra patch preview`: Rendered syntax-highlighted diff with line counts.
+  - `brahmastra patch apply --yes`: Atomically modified target file.
+  - `brahmastra patch eval-cmd "rm -rf /" --yes`: Correctly blocked auto-approval of dangerous command.
+
+### Known Limitations
+- Milestone 10 will implement sandboxed/controlled test execution, environment isolation, process timeouts, and bounded automated retries.
+
+### Next Step
+- Milestone 10: Sandboxed or tightly controlled test execution, verification and bounded retries.
+
 
 
