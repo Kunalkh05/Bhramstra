@@ -12,7 +12,7 @@
 | :--- | :---: | :--- | :--- | :--- | :---: |
 | **BRAH-SEC-001** | **HIGH** | Access Control / Isolation | Credential Lifecycle Use Cases | `application/use_cases/credential_use_cases.py` (L26-L450) | **VERIFIED_FIXED** |
 | **BRAH-SEC-002** | **HIGH** | Credential Exposure | macOS Keychain Subprocess Invocation | `infrastructure/vault/macos_keychain.py` (L29-L40) | **ACCEPTED** |
-| **BRAH-SEC-003** | **MEDIUM** | Information Disclosure | Shell Command Policy Engine | `domain/patch/command_policy.py` (L27-L40, L61) | **ACCEPTED** |
+| **BRAH-SEC-003** | **MEDIUM** | Information Disclosure | Shell Command Policy Engine | `domain/patch/command_policy.py` (L17-L70) | **VERIFIED_FIXED** |
 | **BRAH-SEC-004** | **MEDIUM** | Injection | Sandboxed Test Command Runner | `application/use_cases/execution_use_cases.py` (L30-L38) | **ACCEPTED** |
 | **BRAH-SEC-005** | **LOW** | Network Security | Local Inference Daemon | `infrastructure/providers/ollama.py` (L24-L35) | **ACCEPTED** |
 
@@ -87,6 +87,7 @@
 - **Expected Behavior:** Commands targeting protected configuration, private keys, or system password databases must be flagged as `MODERATE` or `DANGEROUS` and require explicit interactive confirmation.
 - **Actual Behavior:** Any command starting with `cat` and lacking shell redirection operators is categorized as `SAFE_READ` and can be auto-executed under `--yes`.
 - **Impact:** Exfiltration of local secrets and SSH keys by automated workflows.
+- **Resolution:** RESOLVED & VERIFIED. Removed `cat` from `SAFE_COMMAND_PREFIXES`. Added `SENSITIVE_TARGET_PATTERNS` regex filter in `CommandPolicyEngine` matching `.env`, `.git/config`, `id_rsa`, `.ssh/`, `.aws/`, and `/etc/shadow`, classifying sensitive file reads as `CommandRiskLevel.DANGEROUS` with `requires_explicit_override=True`. 7/7 regression tests in `tests/security/test_command_policy_security.py` passing.
 
 ---
 

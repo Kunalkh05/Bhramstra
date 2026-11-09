@@ -30,6 +30,6 @@
 - [x] **Round 5: Human Approval Gate** — Explicit user review prior to code changes (APPROVED by user).
 - [ ] **Round 6: Controlled Implementation & Verification** — One finding at a time.
   - [x] `BRAH-SEC-001` (Cross-Tenant Credential Scoping): **VERIFIED_FIXED** (5/5 security regression tests passing, 111/111 full suite passing).
-  - [ ] `BRAH-SEC-003` (Sensitive File Disclosure via Command Policy Whitelist): Next item.
+  - [x] `BRAH-SEC-003` (Sensitive File Disclosure via Command Policy Whitelist): **VERIFIED_FIXED** (7/7 security regression tests passing, 118/118 full suite passing).
   - [ ] `BRAH-SEC-004` (Pytest Flag & Option Injection): Next item.
   - [ ] `BRAH-SEC-002` (Plaintext Password in Keychain CLI `-w` Argument): Next item.

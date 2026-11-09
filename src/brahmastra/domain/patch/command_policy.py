@@ -24,6 +24,10 @@ class CommandPolicyEngine:
         re.compile(r">\s*/dev/(sd|hd|nvme)"),
     ]
 
+    SENSITIVE_TARGET_PATTERNS: List[Pattern] = [
+        re.compile(r"(\.env|\.git/config|\.netrc|\.aws/|id_rsa|id_ecdsa|id_ed25519|\.ssh/|/etc/shadow|/etc/master\.passwd)"),
+    ]
+
     SAFE_COMMAND_PREFIXES: List[str] = [
         "ls",
         "git status",
@@ -32,7 +36,6 @@ class CommandPolicyEngine:
         "pwd",
         "whoami",
         "which",
-        "cat",
         "pytest",
         "python -m pytest",
         "python --version",
@@ -52,6 +55,17 @@ class CommandPolicyEngine:
                 return ShellCommandAction(
                     command=cleaned_cmd,
                     explanation=explanation or "Dangerous command detected; may modify system or delete files.",
+                    working_dir=working_dir,
+                    risk_level=CommandRiskLevel.DANGEROUS,
+                    requires_explicit_override=True,
+                )
+
+        # 1b. Check for sensitive file inspection/disclosure targets
+        for pattern in cls.SENSITIVE_TARGET_PATTERNS:
+            if pattern.search(cleaned_cmd):
+                return ShellCommandAction(
+                    command=cleaned_cmd,
+                    explanation=explanation or "Potentially sensitive file disclosure or credential access target detected.",
                     working_dir=working_dir,
                     risk_level=CommandRiskLevel.DANGEROUS,
                     requires_explicit_override=True,
