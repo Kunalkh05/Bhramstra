@@ -11,7 +11,7 @@
 | Finding ID | Severity | Category | Affected Component | File & Line Range | Status |
 | :--- | :---: | :--- | :--- | :--- | :---: |
 | **BRAH-SEC-001** | **HIGH** | Access Control / Isolation | Credential Lifecycle Use Cases | `application/use_cases/credential_use_cases.py` (L26-L450) | **VERIFIED_FIXED** |
-| **BRAH-SEC-002** | **HIGH** | Credential Exposure | macOS Keychain Subprocess Invocation | `infrastructure/vault/macos_keychain.py` (L29-L40) | **ACCEPTED** |
+| **BRAH-SEC-002** | **HIGH** | Credential Exposure | macOS Keychain Subprocess Invocation | `infrastructure/vault/macos_keychain.py` (L15-L250) | **VERIFIED_FIXED** |
 | **BRAH-SEC-003** | **MEDIUM** | Information Disclosure | Shell Command Policy Engine | `domain/patch/command_policy.py` (L17-L70) | **VERIFIED_FIXED** |
 | **BRAH-SEC-004** | **MEDIUM** | Injection | Sandboxed Test Command Runner | `application/use_cases/execution_use_cases.py` (L26-L45) | **VERIFIED_FIXED** |
 | **BRAH-SEC-005** | **LOW** | Network Security | Local Inference Daemon | `infrastructure/providers/ollama.py` (L24-L35) | **ACCEPTED** |
@@ -68,6 +68,7 @@
 - **Expected Behavior:** Secrets must be passed via standard input pipes or directly via C in-memory APIs (`Security.framework`), never appearing in process `argv`.
 - **Actual Behavior:** The raw plaintext secret is passed as the `-w` argument to `/usr/bin/security`.
 - **Impact:** Immediate plaintext credential compromise on multi-process host environments.
+- **Resolution:** RESOLVED & VERIFIED. Implemented native C bindings using `ctypes` to macOS `Security.framework` (`SecKeychainAddGenericPassword`, `SecKeychainFindGenericPassword`, `SecKeychainItemModifyAttributesAndData`, `SecKeychainItemDelete`, and `SecKeychainItemFreeContent`). Secrets are passed purely as in-memory memory pointers without external subprocesses or argument vector (`argv`) exposure. Tested on native Apple Silicon M1 (ARM64) macOS with 1/1 hermetic security regression test in `tests/security/test_keychain_security.py` and 9/9 unit tests passing.
 
 ---
 
