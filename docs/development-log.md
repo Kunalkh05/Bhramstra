@@ -24,17 +24,15 @@ This document records chronological progress, architectural decisions, commands 
   - `brahmastra doctor` (checking Python version, Darwin OS, architecture ARM64/x86_64, directory permissions).
 - Implemented unit tests using Typer's `CliRunner`.
 
-### Test Results
-- Command run: `.venv/bin/pytest tests/unit/test_cli.py`
-- Result: **5 passed in 0.90s (100% pass rate)**
-  - `tests/unit/test_cli.py::test_cli_help` PASSED
-  - `tests/unit/test_cli.py::test_cli_no_args_shows_help` PASSED
-  - `tests/unit/test_cli.py::test_cli_version_flag` PASSED
-  - `tests/unit/test_cli.py::test_cli_short_version_flag` PASSED
-  - `tests/unit/test_cli.py::test_cli_doctor` PASSED
-- Verified direct CLI invocation:
-  - `.venv/bin/brahmastra --version` -> `BRAHMASTRA AI version 0.1.0`
-  - `.venv/bin/brahmastra doctor` -> All 6 diagnostic categories PASS (macOS Darwin, architecture check, SQLite, macOS Keychain CLI at `/usr/bin/security`, config directory).
+### Native Apple Silicon (M1 ARM64) Configuration & Test Results
+- Resolved execution environment to native Apple Silicon (`arm64`):
+  - Extracted native `arm64` architecture binary via `lipo` from universal Python 3.13 install.
+  - Installed native Apple Silicon wheels (`pydantic_core-2.50.4-cp313-cp313-macosx_11_0_arm64.whl`).
+- Command run: `.venv/bin/brahmastra doctor`
+  - `CPU Architecture`: **PASS - Apple Silicon / ARM64 (arm64)**
+  - All 6 diagnostic categories PASS.
+- Test Suite: `.venv/bin/pytest tests/unit/test_cli.py`
+  - Result: **5 passed in 0.08s (100% pass rate, native ARM execution)**.
 
 ### Known Limitations
 - Milestone 1 provides the CLI framework and diagnostics only. Organization management, vault storage, and AI provider integration will be introduced in subsequent milestones.
