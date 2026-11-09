@@ -32,6 +32,9 @@ class OrganizationModel(Base):
     assignments: Mapped[List["OrganizationAssignmentModel"]] = relationship(
         back_populates="organization", cascade="all, delete-orphan"
     )
+    usage_records: Mapped[List["UsageRecordModel"]] = relationship(
+        back_populates="organization", cascade="all, delete-orphan"
+    )
 
 
 class ProviderAccountModel(Base):
@@ -52,6 +55,12 @@ class ProviderAccountModel(Base):
         back_populates="account", cascade="all, delete-orphan"
     )
     credentials: Mapped[List["CredentialModel"]] = relationship(
+        back_populates="account", cascade="all, delete-orphan"
+    )
+    cached_models: Mapped[List["CachedModelModel"]] = relationship(
+        back_populates="account", cascade="all, delete-orphan"
+    )
+    usage_records: Mapped[List["UsageRecordModel"]] = relationship(
         back_populates="account", cascade="all, delete-orphan"
     )
 
@@ -98,3 +107,47 @@ class CredentialModel(Base):
     __table_args__ = (
         UniqueConstraint("account_id", "label", name="uq_account_credential_label"),
     )
+
+
+class CachedModelModel(Base):
+    """
+    Locally cached model catalog metadata for offline resilience.
+    """
+    __tablename__ = "cached_models"
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    account_id: Mapped[int] = mapped_column(ForeignKey("provider_accounts.id", ondelete="CASCADE"), nullable=False)
+    model_id: Mapped[str] = mapped_column(String(128), nullable=False)
+    name: Mapped[str] = mapped_column(String(128), nullable=False)
+    context_window: Mapped[int] = mapped_column(Integer, default=4096, nullable=False)
+    capabilities: Mapped[str] = mapped_column(String(256), default="chat,streaming", nullable=False)
+    is_local: Mapped[bool] = mapped_column(default=False, nullable=False)
+    synced_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now, nullable=False)
+
+    account: Mapped["ProviderAccountModel"] = relationship(back_populates="cached_models")
+
+    __table_args__ = (
+        UniqueConstraint("account_id", "model_id", name="uq_account_model_id"),
+    )
+
+
+class UsageRecordModel(Base):
+    """
+    Request-level usage accounting attributed to organization, account, and model.
+    Financial cost stored in integer micro-USD (1 USD = 1,000,000 micro-USD) to avoid float rounding.
+    """
+    __tablename__ = "usage_records"
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    organization_id: Mapped[int] = mapped_column(ForeignKey("organizations.id", ondelete="CASCADE"), nullable=False)
+    account_id: Mapped[int] = mapped_column(ForeignKey("provider_accounts.id", ondelete="CASCADE"), nullable=False)
+    model_id: Mapped[str] = mapped_column(String(128), nullable=False, index=True)
+    prompt_tokens: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    completion_tokens: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    total_tokens: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    cost_micro_usd: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    latency_ms: Mapped[Optional[float]] = mapped_column(nullable=True)
+    timestamp: Mapped[datetime] = mapped_column(DateTime, default=utc_now, nullable=False, index=True)
+
+    organization: Mapped["OrganizationModel"] = relationship(back_populates="usage_records")
+    account: Mapped["ProviderAccountModel"] = relationship(back_populates="usage_records")

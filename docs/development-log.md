@@ -193,4 +193,43 @@ This document records chronological progress, architectural decisions, commands 
 - Milestone 6 will add persistent Model Registry caching, health tracking timestamps, and token usage accounting records in SQLite.
 
 ### Next Step
-- Milestone 6: Model registry, health status, and usage records.
+- Milestone 6: Model registry, health status, and usage records (Completed below).
+
+---
+
+## [2026-11-09] — Milestone 6: Model Registry, Health Status & Usage Accounting
+
+### Objectives
+1. Implement persistent SQLite caching for model catalog (`CachedModelModel`) with tenant isolation.
+2. Build request-level usage records (`UsageRecordModel`) tracking prompt tokens, completion tokens, latency, and integer micro-USD costs (`cost_micro_usd`).
+3. Guarantee exact financial precision (avoiding floating point IEEE 754 cumulative errors).
+4. Implement `brahmastra usage` CLI command with aggregate metrics, model breakdown, and recent request logs.
+5. Enhance `brahmastra models` with `--sync` and automatic local SQLite cache serving.
+6. Author unit tests covering caching, tenant isolation, and micro-dollar accounting; verify 100% pass rate.
+
+### Actions Taken
+- Created `CachedModelModel` with unique constraints on `(account_id, model_id)`.
+- Created `UsageRecordModel` with foreign keys to `OrganizationModel` and `ProviderAccountModel`.
+- Built application use cases:
+  - `sync_models_for_account` and `get_cached_models` in `model_registry_use_cases.py`.
+  - `record_usage`, `get_usage_summary`, and `list_usage_records` in `usage_use_cases.py`.
+- Built Typer CLI subcommands in `usage.py` and enhanced `models.py`.
+- Authored 6 new unit tests for model registry and usage accounting.
+
+### Test Results
+- Command run: `.venv/bin/pytest`
+- Result: **48 passed in 0.86s (100% pass rate, 0 warnings)**
+  - Model registry sync & tenant isolation: 2 passed
+  - Usage records & micro-dollar precision: 2 passed
+  - Usage CLI commands: 2 passed
+  - Total full suite: 48 passed
+- Live verification:
+  - `brahmastra models sync`: Cached 461 models in SQLite.
+  - `brahmastra models list`: Served instantly from local SQLite cache in 0.05s.
+  - `brahmastra usage --details`: Accurately attributed tokens, latencies, and micro-dollar costs.
+
+### Known Limitations
+- Milestone 7 will implement explainable routing policies with hard constraints (privacy/offline-first, model capability matching, fallback ordering).
+
+### Next Step
+- Milestone 7: Explainable baseline routing with hard constraints.
