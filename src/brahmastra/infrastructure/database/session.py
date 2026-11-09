@@ -3,9 +3,9 @@ Database engine and session management.
 """
 
 from contextlib import contextmanager
-from typing import Generator, Optional
+from typing import Generator, Optional, Set
 from pathlib import Path
-from sqlalchemy import create_engine, Engine
+from sqlalchemy import create_engine, Engine, event
 from sqlalchemy.orm import sessionmaker, Session
 
 from brahmastra.infrastructure.config import get_db_path
@@ -13,6 +13,18 @@ from brahmastra.infrastructure.database.models import Base
 
 _engine: Optional[Engine] = None
 _session_factory: Optional[sessionmaker[Session]] = None
+_initialized_engine_ids: Set[int] = set()
+
+
+@event.listens_for(Engine, "connect")
+def set_sqlite_pragma(dbapi_connection, connection_record):
+    """Enable WAL mode and busy timeout on every SQLite connection."""
+    cursor = dbapi_connection.cursor()
+    try:
+        cursor.execute("PRAGMA journal_mode=WAL;")
+        cursor.execute("PRAGMA busy_timeout=5000;")
+    finally:
+        cursor.close()
 
 
 def get_engine(db_path: Optional[Path] = None) -> Engine:
@@ -27,7 +39,7 @@ def get_engine(db_path: Optional[Path] = None) -> Engine:
 
     engine = create_engine(
         db_url,
-        connect_args={"check_same_thread": False},
+        connect_args={"check_same_thread": False, "timeout": 5.0},
         echo=False,
     )
     _engine = engine
@@ -36,9 +48,12 @@ def get_engine(db_path: Optional[Path] = None) -> Engine:
 
 
 def init_db(engine: Optional[Engine] = None) -> None:
-    """Initialize database tables."""
+    """Initialize database tables once per engine."""
     eng = engine or get_engine()
-    Base.metadata.create_all(bind=eng)
+    eng_id = id(eng)
+    if eng_id not in _initialized_engine_ids:
+        Base.metadata.create_all(bind=eng)
+        _initialized_engine_ids.add(eng_id)
 
 
 @contextmanager
