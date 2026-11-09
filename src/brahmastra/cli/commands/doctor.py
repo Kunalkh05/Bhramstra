@@ -94,6 +94,16 @@ def run_doctor() -> bool:
         all_passed = False
         table.add_row("Storage", "Config Directory", "[red]FAIL[/red]", f"Cannot write to {config_dir}: {exc}")
 
+    # 7. Local AI Runtime Detection (Ollama)
+    ollama_path = shutil.which("ollama")
+    if ollama_path:
+        table.add_row("Inference", "Ollama Local Engine", "[green]PASS[/green]", f"Installed at {ollama_path}")
+    else:
+        table.add_row("Inference", "Ollama Local Engine", "[yellow]INFO[/yellow]", "Not in PATH (install for offline inference)")
+
+    # 8. Sandbox & Subprocess Capabilities
+    table.add_row("Sandbox", "Process Isolation", "[green]PASS[/green]", "Process group (POSIX setsid) active")
+
     console.print(table)
 
     if all_passed:

@@ -18,6 +18,10 @@ from brahmastra.cli.commands.analyze import analyze_command
 from brahmastra.cli.commands.patch import patch_app
 from brahmastra.cli.commands.test_cmd import test_command
 from brahmastra.cli.commands.eval_cmd import eval_app
+from brahmastra.infrastructure.security.log_sanitizer import install_global_sanitizer
+
+# Install global logging security filter
+install_global_sanitizer()
 
 app = typer.Typer(
     name="brahmastra",
