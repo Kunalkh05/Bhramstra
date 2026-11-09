@@ -232,4 +232,42 @@ This document records chronological progress, architectural decisions, commands 
 - Milestone 7 will implement explainable routing policies with hard constraints (privacy/offline-first, model capability matching, fallback ordering).
 
 ### Next Step
-- Milestone 7: Explainable baseline routing with hard constraints.
+- Milestone 7: Explainable baseline routing with hard constraints (Completed below).
+
+---
+
+## [2026-11-09] — Milestone 7: Explainable Baseline Routing with Hard Constraints
+
+### Objectives
+1. Implement pure domain `RoutingEngine` evaluating hard constraints (`require_local`, `require_capabilities`, `min_context_window`, `blocked_models`, `allowed_providers`) and routing preferences (`LOCAL_FIRST`, `CLOUD_FIRST`).
+2. Guarantee full explainability: emit structured decision logs detailing eligible candidates, eliminated candidates with exact failure reasons, and ranking scores.
+3. Keep the routing engine strictly isolated from secret material and provider network calls (secrets injected ephemerally by use-case layer strictly at dispatch time).
+4. Implement `brahmastra route <task> --explain` for dry-run inspection of routing decisions.
+5. Implement `brahmastra run <task>` to resolve optimal route, execute via provider adapter, and automatically record token/cost accounting.
+6. Author unit tests covering all hard constraints, ranking preferences, and CLI commands; verify 100% pass rate.
+
+### Actions Taken
+- Created pure domain models (`RoutingConstraints`, `RoutingPreference`, `CandidateModel`, `RouteDecision`, `CandidateEvaluation`) in `src/brahmastra/domain/routing/models.py`.
+- Implemented deterministic `RoutingEngine` in `src/brahmastra/domain/routing/router.py`.
+- Built application use cases:
+  - `resolve_route` (dry-run routing without dispatch).
+  - `execute_routed_request` (resolves route, fetches ephemeral secret from OS vault, dispatches inference, records usage in SQLite).
+- Built CLI commands in `src/brahmastra/cli/commands/route.py` and registered `route` and `run` in `app.py`.
+- Authored 8 new unit tests in `tests/unit/test_routing_engine.py` and `tests/unit/test_routing_cli.py`.
+
+### Test Results
+- Command run: `.venv/bin/pytest -v`
+- Result: **56 passed in 0.89s (100% pass rate, 0 warnings)**
+  - Routing engine hard constraints and preferences: 6 passed
+  - Routing and run CLI flows: 2 passed
+  - Total full suite: 56 passed
+- Live verification:
+  - `brahmastra route "Write a python script" --explain`: Successfully evaluated candidates, showed step-by-step constraint matching and selection.
+  - `brahmastra run "Say hello"`: Routed to available model, executed, displayed response and token cost attribution.
+
+### Known Limitations
+- Milestone 8 will introduce Read-Only Repository Inspection, code structure AST parsing, token budget calculation, and secret leak detection.
+
+### Next Step
+- Milestone 8: Read-only repository inspection & codebase explanation.
+
