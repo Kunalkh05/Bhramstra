@@ -26,6 +26,48 @@ from brahmastra.infrastructure.database.models import (
 from brahmastra.infrastructure.database.session import get_session
 from brahmastra.infrastructure.vault.factory import get_vault
 from brahmastra.domain.vault.interface import VaultInterface
+from brahmastra.infrastructure.config import get_active_org_name
+
+
+def _verify_account_organization_scoping(
+    session,
+    account: ProviderAccountModel,
+    org_name: Optional[str] = None,
+) -> None:
+    """
+    Verify that the account is accessible within the given or active organization scope.
+    If org_name is provided, or active org is set, ensures the account has an assignment
+    to that organization (BRAH-SEC-001).
+    """
+    target_org = org_name
+    if not target_org:
+        active = get_active_org_name()
+        if active:
+            active_org_record = session.scalar(
+                select(OrganizationModel).where(OrganizationModel.name == active)
+            )
+            if active_org_record:
+                target_org = active
+
+    if not target_org:
+        return
+
+    org = session.scalar(
+        select(OrganizationModel).where(OrganizationModel.name == target_org)
+    )
+    if not org:
+        raise ValueError(f"Organization '{target_org}' not found.")
+
+    assignment = session.scalar(
+        select(OrganizationAssignmentModel).where(
+            OrganizationAssignmentModel.account_id == account.id,
+            OrganizationAssignmentModel.organization_id == org.id,
+        )
+    )
+    if not assignment:
+        raise PermissionError(
+            f"Account '{account.name}' is not assigned to organization '{target_org}'."
+        )
 
 
 def register_provider_account(
@@ -158,6 +200,7 @@ def assign_account_to_organization(
 
 def add_credential(
     data: CredentialCreate,
+    org_name: Optional[str] = None,
     vault: Optional[VaultInterface] = None,
     engine: Optional[Engine] = None,
 ) -> CredentialRead:
@@ -172,6 +215,8 @@ def add_credential(
         )
         if not account:
             raise ValueError(f"Provider account '{data.account_name}' not found.")
+
+        _verify_account_organization_scoping(session, account, org_name)
 
         existing = session.scalar(
             select(CredentialModel).where(
@@ -265,6 +310,7 @@ def list_credentials(
 def verify_credential(
     label: str,
     account_name: str,
+    org_name: Optional[str] = None,
     vault: Optional[VaultInterface] = None,
     engine: Optional[Engine] = None,
 ) -> bool:
@@ -276,6 +322,8 @@ def verify_credential(
         )
         if not account:
             raise ValueError(f"Provider account '{account_name}' not found.")
+
+        _verify_account_organization_scoping(session, account, org_name)
 
         cred = session.scalar(
             select(CredentialModel).where(
@@ -299,6 +347,7 @@ def rotate_credential(
     label: str,
     account_name: str,
     new_secret: str,
+    org_name: Optional[str] = None,
     vault: Optional[VaultInterface] = None,
     engine: Optional[Engine] = None,
 ) -> CredentialRead:
@@ -310,6 +359,8 @@ def rotate_credential(
         )
         if not account:
             raise ValueError(f"Provider account '{account_name}' not found.")
+
+        _verify_account_organization_scoping(session, account, org_name)
 
         cred = session.scalar(
             select(CredentialModel).where(
@@ -349,6 +400,7 @@ def rotate_credential(
 def revoke_credential(
     label: str,
     account_name: str,
+    org_name: Optional[str] = None,
     engine: Optional[Engine] = None,
 ) -> CredentialRead:
     """Revoke a credential. Revoked credentials cannot be used for inference."""
@@ -358,6 +410,8 @@ def revoke_credential(
         )
         if not account:
             raise ValueError(f"Provider account '{account_name}' not found.")
+
+        _verify_account_organization_scoping(session, account, org_name)
 
         cred = session.scalar(
             select(CredentialModel).where(
@@ -389,6 +443,7 @@ def revoke_credential(
 def remove_credential(
     label: str,
     account_name: str,
+    org_name: Optional[str] = None,
     vault: Optional[VaultInterface] = None,
     engine: Optional[Engine] = None,
 ) -> bool:
@@ -400,6 +455,8 @@ def remove_credential(
         )
         if not account:
             raise ValueError(f"Provider account '{account_name}' not found.")
+
+        _verify_account_organization_scoping(session, account, org_name)
 
         cred = session.scalar(
             select(CredentialModel).where(

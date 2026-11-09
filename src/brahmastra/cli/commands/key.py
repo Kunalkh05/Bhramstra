@@ -32,6 +32,7 @@ console = Console()
 def key_add(
     account_name: str = typer.Argument(..., help="Target provider account name"),
     label: str = typer.Argument(..., help="Unique label for this credential (e.g. 'primary', 'backup')"),
+    org: Optional[str] = typer.Option(None, "--org", help="Target organization (defaults to active org)"),
     secret: Optional[str] = typer.Option(None, "--secret-stdin", help="Read secret from standard input (non-interactive)"),
 ):
     """
@@ -55,11 +56,12 @@ def key_add(
             label=label,
             secret=raw_secret,
         )
-        cred = add_credential(req)
+        target_org = org or get_active_org_name()
+        cred = add_credential(req, org_name=target_org)
         console.print(f"[bold green]✓ Credential '{cred.label}' saved securely in OS Vault[/bold green]")
         console.print(f"[dim]Vault Reference: {cred.vault_ref}[/dim]")
         console.print(f"[dim]Masked Preview:  {cred.masked_preview}[/dim]")
-    except ValueError as exc:
+    except (ValueError, PermissionError) as exc:
         console.print(f"[bold red]Error:[/bold red] {exc}")
         raise typer.Exit(code=1)
 
@@ -113,18 +115,20 @@ def key_list(
 def key_test(
     label: str = typer.Argument(..., help="Credential label to test"),
     account: str = typer.Option(..., "--account", "-a", help="Provider account name"),
+    org: Optional[str] = typer.Option(None, "--org", help="Organization scope (defaults to active org)"),
 ):
     """
     Verify that a credential exists and is accessible in the OS Vault.
     """
+    target_org = org or get_active_org_name()
     try:
-        valid = verify_credential(label=label, account_name=account)
+        valid = verify_credential(label=label, account_name=account, org_name=target_org)
         if valid:
             console.print(f"[bold green]✓ Credential '{label}' on account '{account}' is accessible in OS Vault.[/bold green]")
         else:
             console.print(f"[bold red]✗ Credential '{label}' on account '{account}' not found in OS Vault.[/bold red]")
             raise typer.Exit(code=1)
-    except ValueError as exc:
+    except (ValueError, PermissionError) as exc:
         console.print(f"[bold red]Error:[/bold red] {exc}")
         raise typer.Exit(code=1)
 
@@ -133,6 +137,7 @@ def key_test(
 def key_rotate(
     label: str = typer.Argument(..., help="Credential label to rotate"),
     account: str = typer.Option(..., "--account", "-a", help="Provider account name"),
+    org: Optional[str] = typer.Option(None, "--org", help="Organization scope (defaults to active org)"),
     secret: Optional[str] = typer.Option(None, "--secret-stdin", help="Read new secret from stdin"),
 ):
     """
@@ -149,11 +154,12 @@ def key_rotate(
         console.print("[bold red]Error:[/bold red] Secret cannot be empty.")
         raise typer.Exit(code=1)
 
+    target_org = org or get_active_org_name()
     try:
-        cred = rotate_credential(label=label, account_name=account, new_secret=new_secret)
+        cred = rotate_credential(label=label, account_name=account, new_secret=new_secret, org_name=target_org)
         console.print(f"[bold green]✓ Credential '{cred.label}' rotated successfully in OS Vault.[/bold green]")
         console.print(f"[dim]New Preview: {cred.masked_preview}[/dim]")
-    except ValueError as exc:
+    except (ValueError, PermissionError) as exc:
         console.print(f"[bold red]Error:[/bold red] {exc}")
         raise typer.Exit(code=1)
 
@@ -162,6 +168,7 @@ def key_rotate(
 def key_revoke(
     label: str = typer.Argument(..., help="Credential label to revoke"),
     account: str = typer.Option(..., "--account", "-a", help="Provider account name"),
+    org: Optional[str] = typer.Option(None, "--org", help="Organization scope (defaults to active org)"),
     force: bool = typer.Option(False, "--force", "-f", help="Bypass confirmation prompt"),
 ):
     """
@@ -173,10 +180,11 @@ def key_revoke(
             console.print("[yellow]Aborted.[/yellow]")
             return
 
+    target_org = org or get_active_org_name()
     try:
-        cred = revoke_credential(label=label, account_name=account)
+        cred = revoke_credential(label=label, account_name=account, org_name=target_org)
         console.print(f"[bold yellow]✓ Credential '{cred.label}' on account '{account}' marked as REVOKED.[/bold yellow]")
-    except ValueError as exc:
+    except (ValueError, PermissionError) as exc:
         console.print(f"[bold red]Error:[/bold red] {exc}")
         raise typer.Exit(code=1)
 
@@ -185,6 +193,7 @@ def key_revoke(
 def key_remove(
     label: str = typer.Argument(..., help="Credential label to permanently delete"),
     account: str = typer.Option(..., "--account", "-a", help="Provider account name"),
+    org: Optional[str] = typer.Option(None, "--org", help="Organization scope (defaults to active org)"),
     force: bool = typer.Option(False, "--force", "-f", help="Bypass confirmation prompt"),
 ):
     """
@@ -196,9 +205,10 @@ def key_remove(
             console.print("[yellow]Aborted.[/yellow]")
             return
 
+    target_org = org or get_active_org_name()
     try:
-        remove_credential(label=label, account_name=account)
+        remove_credential(label=label, account_name=account, org_name=target_org)
         console.print(f"[bold green]✓ Credential '{label}' permanently removed from OS Vault and database.[/bold green]")
-    except ValueError as exc:
+    except (ValueError, PermissionError) as exc:
         console.print(f"[bold red]Error:[/bold red] {exc}")
         raise typer.Exit(code=1)
