@@ -27,7 +27,19 @@ def run_project_tests(
 
     cmd = [sys.executable, "-m", "pytest", "-v"]
     if target:
-        cmd.append(target)
+        cleaned_target = target.strip()
+        if cleaned_target.startswith("-"):
+            raise ValueError(f"Invalid test target '{target}': Flag or option injection detected (BRAH-SEC-004).")
+
+        file_part = cleaned_target.split("::")[0].strip()
+        if file_part:
+            resolved_target = (cwd / file_part).resolve()
+            if not resolved_target.is_relative_to(cwd):
+                raise ValueError(
+                    f"Invalid test target '{target}': Path traversal outside working directory detected (BRAH-SEC-004)."
+                )
+
+        cmd.extend(["--", cleaned_target])
 
     config = TestExecutionConfig(
         command=cmd,

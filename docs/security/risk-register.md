@@ -13,7 +13,7 @@
 | **BRAH-SEC-001** | **HIGH** | Access Control / Isolation | Credential Lifecycle Use Cases | `application/use_cases/credential_use_cases.py` (L26-L450) | **VERIFIED_FIXED** |
 | **BRAH-SEC-002** | **HIGH** | Credential Exposure | macOS Keychain Subprocess Invocation | `infrastructure/vault/macos_keychain.py` (L29-L40) | **ACCEPTED** |
 | **BRAH-SEC-003** | **MEDIUM** | Information Disclosure | Shell Command Policy Engine | `domain/patch/command_policy.py` (L17-L70) | **VERIFIED_FIXED** |
-| **BRAH-SEC-004** | **MEDIUM** | Injection | Sandboxed Test Command Runner | `application/use_cases/execution_use_cases.py` (L30-L38) | **ACCEPTED** |
+| **BRAH-SEC-004** | **MEDIUM** | Injection | Sandboxed Test Command Runner | `application/use_cases/execution_use_cases.py` (L26-L45) | **VERIFIED_FIXED** |
 | **BRAH-SEC-005** | **LOW** | Network Security | Local Inference Daemon | `infrastructure/providers/ollama.py` (L24-L35) | **ACCEPTED** |
 
 ---
@@ -107,6 +107,7 @@
 - **Expected Behavior:** Target argument must be validated to ensure it is a safe file path or module path, not a flag starting with `-`.
 - **Actual Behavior:** Arbitrary flags are passed directly to `pytest`, allowing modification of test runner runtime hooks and configuration.
 - **Impact:** Subversion of test execution controls and sandbox circumvention.
+- **Resolution:** RESOLVED & VERIFIED. Validated that `target` cannot begin with `-` (blocking flag/option injection) and validated that target path does not escape the working directory via path traversal. Prepended `--` before positional targets in `pytest` invocation. 2/2 regression tests in `tests/security/test_execution_security.py` passing.
 
 ---
 
