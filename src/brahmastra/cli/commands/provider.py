@@ -14,6 +14,8 @@ from brahmastra.application.use_cases.credential_use_cases import (
     list_credentials,
 )
 from brahmastra.infrastructure.config import get_active_org_name
+from brahmastra.infrastructure.providers.factory import get_provider_adapter
+from brahmastra.infrastructure.vault.factory import get_vault
 
 provider_app = typer.Typer(
     name="provider",
@@ -96,20 +98,42 @@ def provider_test(
     account_name: str = typer.Argument(..., help="Name of provider account to verify"),
 ):
     """
-    Verify configuration and credentials for a provider account.
+    Verify configuration, credentials, and live endpoint connectivity for a provider account.
     """
     try:
-        creds = list_credentials(account_name=account_name)
-        if not creds:
-            console.print(f"[yellow]Account '{account_name}' has no registered credentials.[/yellow]")
-            console.print(f"Run [bold cyan]brahmastra key add {account_name} <label>[/bold cyan] to add one.")
-            return
+        accounts = list_provider_accounts()
+        acc = next((a for a in accounts if a.name == account_name), None)
+        if not acc:
+            console.print(f"[bold red]Error:[/bold red] Provider account '{account_name}' not found.")
+            raise typer.Exit(code=1)
 
+        creds = list_credentials(account_name=account_name)
         active_creds = [c for c in creds if c.status.value == "ACTIVE"]
-        console.print(f"Account [bold cyan]{account_name}[/bold cyan]: {len(creds)} credential(s) found ({len(active_creds)} active).")
-        for c in creds:
-            status_color = "green" if c.status.value == "ACTIVE" else "red"
-            console.print(f"  • [{status_color}]{c.label}[/{status_color}]: status={c.status.value}, health={c.health_status.value}")
+        
+        console.print(f"\n[bold cyan]Diagnostic Check for Account '{account_name}'[/bold cyan] ({acc.provider_type})")
+        console.print(f"Endpoint: {acc.endpoint or 'Default'}")
+        console.print(f"Credentials registered: {len(creds)} ({len(active_creds)} active)\n")
+
+        secret = None
+        if active_creds:
+            vault = get_vault()
+            # Extract secret for primary active key
+            first_cred = active_creds[0]
+            service_name = f"brahmastra:{acc.provider_type}"
+            account_slot = f"{acc.name}:{first_cred.label}"
+            secret = vault.get_secret(service_name, account_slot)
+
+        # Execute live adapter health check
+        adapter = get_provider_adapter(acc.provider_type, endpoint=acc.endpoint)
+        health = adapter.health_check(secret=secret)
+
+        health_color = "green" if health.status == "HEALTHY" else "red"
+        console.print(f"Status:  [{health_color}]{health.status}[/{health_color}]")
+        if health.latency_ms is not None:
+            console.print(f"Latency: [bold]{health.latency_ms} ms[/bold]")
+        if health.details:
+            console.print(f"Details: [dim]{health.details}[/dim]\n")
+
     except ValueError as exc:
         console.print(f"[bold red]Error:[/bold red] {exc}")
         raise typer.Exit(code=1)

@@ -154,4 +154,43 @@ This document records chronological progress, architectural decisions, commands 
 - Milestone 5 will introduce the normalized provider interface and live adapters for OpenRouter and Ollama.
 
 ### Next Step
-- Milestone 5: Provider interface plus OpenRouter and Ollama adapters.
+- Milestone 5: Provider interface plus OpenRouter and Ollama adapters (Completed below).
+
+---
+
+## [2026-11-09] — Milestone 5: Normalized Provider Contract & OpenRouter / Ollama Adapters
+
+### Objectives
+1. Design normalized `ProviderInterface` contract (`generate`, `list_models`, `health_check`).
+2. Implement normalized error hierarchy (`AuthenticationError`, `RateLimitError`, `ProviderUnavailableError`, `TimeoutError`, `InvalidRequestError`).
+3. Build `OpenRouterAdapter` for OpenAI-compatible cloud inference.
+4. Build `OllamaAdapter` for local zero-network inference on Apple Silicon / macOS.
+5. Provide `get_provider_adapter` factory.
+6. Implement CLI command `brahmastra models list` and enhance `brahmastra provider test <account>`.
+7. Author hermetic unit tests with `respx` mocking; verify 100% pass rate.
+
+### Actions Taken
+- Created domain models (`GenerationRequest`, `GenerationResponse`, `ModelInfo`, `HealthStatus`) and error taxonomy.
+- Built `OpenRouterAdapter` with token usage extraction, header hygiene, and HTTP error normalization.
+- Built `OllamaAdapter` supporting local models, parameter sizes, and daemon connection recovery guidance.
+- Enhanced `brahmastra provider test <account>` with live network round-trip latency diagnostics.
+- Implemented `brahmastra models list` with Rich table cataloging.
+- Authored 15 new unit tests using `respx` offline mocks.
+
+### Test Results
+- Command run: `.venv/bin/pytest`
+- Result: **42 passed in 0.69s (100% pass rate, 0 warnings)**
+  - OpenRouter adapter tests: 7 passed
+  - Ollama adapter tests: 6 passed
+  - Models CLI tests: 2 passed
+  - Total full suite: 42 passed
+- Live verification:
+  - `brahmastra provider test openrouter-main`: **Status: HEALTHY (Latency: 1182.5 ms)**
+  - `brahmastra provider test ollama-local`: **Status: UNREACHABLE (Latency: 32.03 ms, guidance: Start Ollama with 'ollama serve')**
+  - `brahmastra models list`: Successfully cataloged 461 models from OpenRouter with context windows and capabilities.
+
+### Known Limitations
+- Milestone 6 will add persistent Model Registry caching, health tracking timestamps, and token usage accounting records in SQLite.
+
+### Next Step
+- Milestone 6: Model registry, health status, and usage records.

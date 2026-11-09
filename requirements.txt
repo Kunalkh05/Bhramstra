@@ -1,6 +1,12 @@
 annotated-doc==0.0.5
 annotated-types==0.8.0
--e git+https://github.com/Kunalkh05/Bhramstra.git@b70aee81a9c1cb9f1657968b8926b924de984803#egg=brahmastra
+anyio==4.16.0
+-e git+https://github.com/Kunalkh05/Bhramstra.git@b8190b44a66954dbc9bc2ef617f5a38811ee1a25#egg=brahmastra
+certifi==2026.10.23
+h11==0.16.0
+httpcore==1.0.9
+httpx==0.28.1
+idna==3.20
 iniconfig==2.3.1
 markdown-it-py==4.2.0
 mdurl==0.1.2
@@ -10,6 +16,7 @@ pydantic==2.14.3
 pydantic_core==2.50.4
 Pygments==2.21.0
 pytest==9.2.0
+respx==0.23.1
 rich==15.0.0
 shellingham==1.5.4
 SQLAlchemy==2.1.8

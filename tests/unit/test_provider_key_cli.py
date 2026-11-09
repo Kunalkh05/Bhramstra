@@ -3,6 +3,7 @@ CLI integration tests for brahmastra provider and brahmastra key commands.
 """
 
 import pytest
+import respx
 from typer.testing import CliRunner
 from brahmastra.cli.app import app
 
@@ -14,8 +15,14 @@ def isolated_env(tmp_path, monkeypatch):
     monkeypatch.setenv("BRAHMASTRA_VAULT", "memory")
 
 
+@respx.mock
 def test_provider_cli_flow(cli_runner: CliRunner):
     """Verify provider add, list, and test commands."""
+    respx.get("https://openrouter.ai/api/v1/models").respond(
+        status_code=200,
+        json={"data": []},
+    )
+
     # 1. Add organization first
     cli_runner.invoke(app, ["org", "add", "default-org"])
 
@@ -33,7 +40,8 @@ def test_provider_cli_flow(cli_runner: CliRunner):
     # 4. Test provider (initially no credentials)
     res = cli_runner.invoke(app, ["provider", "test", "or-main"])
     assert res.exit_code == 0
-    assert "no registered credentials" in res.output
+    assert "Credentials registered: 0" in res.output
+    assert "Status:  HEALTHY" in res.output
 
 
 def test_key_cli_flow(cli_runner: CliRunner):
