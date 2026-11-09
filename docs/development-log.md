@@ -269,5 +269,49 @@ This document records chronological progress, architectural decisions, commands 
 - Milestone 8 will introduce Read-Only Repository Inspection, code structure AST parsing, token budget calculation, and secret leak detection.
 
 ### Next Step
-- Milestone 8: Read-only repository inspection & codebase explanation.
+- Milestone 8: Read-only repository inspection & codebase explanation (Completed below).
+
+---
+
+## [2026-11-09] — Milestone 8: Read-Only Repository Inspection & Codebase Explanation
+
+### Objectives
+1. Implement read-only `RepositoryInspector` honoring ignore rules (`.git`, `.venv`, `__pycache__`, `.brahmastra`, `node_modules`, binary files) and depth restrictions.
+2. Build AST symbol extraction for Python source files (classes, methods, top-level functions, docstrings, imports) using Python's standard `ast` engine.
+3. Compute BPE-approximated token consumption footprint and context readiness for LLM ingestion.
+4. Integrate high-precision regex secret detection taxonomy to detect hardcoded keys (`sk-proj-...`, `AIza...`, `gsk_...`, bearer tokens) and guarantee masking with zero plaintext secret leakage.
+5. Provide strict read-only guarantee: zero file mutations, assert unchanged file hashes and timestamps.
+6. Implement `brahmastra analyze [PATH]` CLI command with rounded Rich summary tables, language share, and optional `--json` machine-readable export.
+7. Author hermetic unit tests for file traversal, AST extraction, secret detection, read-only guarantees, and CLI execution; verify 100% pass rate.
+
+### Actions Taken
+- Created domain models in `src/brahmastra/domain/analysis/models.py` (`FileInfo`, `SymbolInfo`, `ImportInfo`, `SecurityFinding`, `LanguageStat`, `CodebaseAnalysisReport`).
+- Built `RepositoryInspector` in `src/brahmastra/domain/analysis/inspector.py`:
+  - Path traversal with symlink loop detection and max depth limiter.
+  - Binary file detection via null-byte inspection (`\x00`).
+  - Python AST symbol and import visitor with docstring summaries.
+  - Secret scanner utilizing compiled regex patterns with dynamic redacting masks.
+  - Architectural categorization and LLM context readiness rating.
+- Implemented application use case in `src/brahmastra/application/use_cases/analysis_use_cases.py` (`analyze_repository`, `export_report_as_dict`).
+- Built Typer CLI command in `src/brahmastra/cli/commands/analyze.py` with Rich table formatting and raw stdout JSON streaming.
+- Registered `analyze` command in `src/brahmastra/cli/app.py`.
+- Authored 10 new unit tests across `tests/unit/test_repository_inspector.py` and `tests/unit/test_analyze_cli.py`.
+
+### Test Results
+- Command run: `.venv/bin/pytest -v`
+- Result: **66 passed in 0.92s (100% pass rate, 0 warnings)**
+  - Repository inspector traversal, AST extraction, secret scanning, and read-only guarantee: 6 passed
+  - Analyze CLI execution and JSON output: 4 passed
+  - Total full suite: 66 passed
+- Live verification:
+  - `brahmastra analyze .`: Evaluated 87 files, 9,933 LOC, 105.4k tokens, 228 symbols, 0 secret leaks.
+  - `brahmastra analyze src`: Evaluated 55 files, 4,408 LOC, 39.3k tokens, 161 symbols, verified "Clean Architecture".
+  - `brahmastra analyze . --json`: Validated streaming JSON output.
+
+### Known Limitations
+- Milestone 9 will introduce User-Approved Patches, Unified Diff Review, and Explicit Confirmation Gates before any file edits or commands are applied.
+
+### Next Step
+- Milestone 9: User-approved patches, diff review, and explicit command approval.
+
 
