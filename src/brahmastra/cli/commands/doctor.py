@@ -11,6 +11,8 @@ from pathlib import Path
 from rich.console import Console
 from rich.table import Table
 
+from brahmastra.infrastructure.config import get_storage_dir
+
 console = Console()
 
 
@@ -81,7 +83,7 @@ def run_doctor() -> bool:
         table.add_row("Vault", "OS Vault", "[green]PASS[/green]", "Non-Darwin fallback vault supported")
 
     # 6. Workspace & Configuration Storage Permissions
-    config_dir = Path.home() / ".brahmastra"
+    config_dir = get_storage_dir()
     try:
         config_dir.mkdir(parents=True, exist_ok=True)
         test_file = config_dir / ".doctor_probe"

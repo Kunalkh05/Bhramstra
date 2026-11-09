@@ -1,7 +1,6 @@
 annotated-doc==0.0.5
 annotated-types==0.8.0
-# Editable Git install with no remote (brahmastra==0.1.0)
--e /Users/kunalkhande/Project /Bhramstra
+-e git+https://github.com/Kunalkh05/Bhramstra.git@b70aee81a9c1cb9f1657968b8926b924de984803#egg=brahmastra
 iniconfig==2.3.1
 markdown-it-py==4.2.0
 mdurl==0.1.2
@@ -13,6 +12,7 @@ Pygments==2.21.0
 pytest==9.2.0
 rich==15.0.0
 shellingham==1.5.4
+SQLAlchemy==2.1.8
 typer==0.28.0
 typing-inspection==0.4.5
 typing_extensions==4.16.0

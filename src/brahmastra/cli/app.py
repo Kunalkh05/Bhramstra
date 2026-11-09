@@ -8,6 +8,7 @@ from rich.console import Console
 
 from brahmastra import __version__
 from brahmastra.cli.commands.doctor import run_doctor
+from brahmastra.cli.commands.org import org_app
 
 app = typer.Typer(
     name="brahmastra",
@@ -15,6 +16,9 @@ app = typer.Typer(
     no_args_is_help=True,
     add_completion=False,
 )
+
+# Register sub-command groups
+app.add_typer(org_app, name="org")
 
 console = Console()
 

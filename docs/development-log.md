@@ -38,4 +38,46 @@ This document records chronological progress, architectural decisions, commands 
 - Milestone 1 provides the CLI framework and diagnostics only. Organization management, vault storage, and AI provider integration will be introduced in subsequent milestones.
 
 ### Next Step
-- Milestone 2: Organization CRUD and active profile switching.
+- Milestone 2: Organization CRUD and active profile switching (Completed below).
+
+---
+
+## [2026-11-09] — Milestone 2: Organization CRUD & Active Profile Switching
+
+### Objectives
+1. Configure storage path to `/Users/kunalkhande/Project /Bhramstra/.brahmastra`.
+2. Add `sqlalchemy>=2.0.0` and configure SQLite persistence.
+3. Build domain models (`Organization`, `OrganizationCreate`) with input validation.
+4. Implement application use cases (`create_organization`, `list_organizations`, `get_organization`, `get_active_organization`, `switch_active_organization`).
+5. Build CLI commands:
+   - `brahmastra org add <name> [--desc <text>]`
+   - `brahmastra org list`
+   - `brahmastra org current`
+   - `brahmastra org switch <name>`
+   - `brahmastra org show <name>`
+6. Implement comprehensive unit tests (use cases & CLI commands) with zero warnings.
+7. Connect and push repository to public GitHub at `https://github.com/Kunalkh05/Bhramstra`.
+
+### Actions Taken
+- Integrated `sqlalchemy` ORM with timezone-aware datetime columns and isolated session management.
+- Implemented state tracking in `.brahmastra/state.json` with fallback resolution.
+- Added Rich formatting tables for listing and inspecting organizations.
+- Added strict organization name validation (alphanumeric with underscores and hyphens, 2-64 characters).
+- Enforced unique organization names at both database and use case levels.
+
+### Test Results
+- Command run: `.venv/bin/pytest`
+- Result: **14 passed in 0.48s (100% pass rate, 0 warnings)**
+  - `tests/unit/test_cli.py`: 5 passed
+  - `tests/unit/test_org_cli.py`: 4 passed
+  - `tests/unit/test_org_use_cases.py`: 5 passed
+- Live verification:
+  - Created `personal` and `company` organizations.
+  - Successfully listed, inspected, and switched active profile.
+  - Verified `brahmastra doctor` validates `/Users/kunalkhande/Project /Bhramstra/.brahmastra`.
+
+### Known Limitations
+- Credentials, vault references, and provider account assignments will be attached to organizations in Milestones 3 and 4.
+
+### Next Step
+- Milestone 3: Vault abstraction and macOS Keychain integration (plus fake vault for test isolation).
