@@ -355,7 +355,46 @@ This document records chronological progress, architectural decisions, commands 
 - Milestone 10 will implement sandboxed/controlled test execution, environment isolation, process timeouts, and bounded automated retries.
 
 ### Next Step
-- Milestone 10: Sandboxed or tightly controlled test execution, verification and bounded retries.
+- Milestone 10: Sandboxed or tightly controlled test execution, verification and bounded retries (Completed below).
+
+---
+
+## [2026-11-09] — Milestone 10: Sandboxed / Controlled Test Execution & Bounded Retries
+
+### Objectives
+1. Build `ControlledTestRunner` executing tests inside an isolated subprocess with strict process-group timeouts (`SIGKILL` on timeout).
+2. Implement environment sanitization stripping secret tokens, credentials, and passwords from child processes while preserving essential system paths (`PATH`, `HOME`, `PYTHONPATH`).
+3. Enforce deterministic test runner flags (`PYTHONUNBUFFERED=1`, `PYTHONDONTWRITEBYTECODE=1`, `BRAHMASTRA_VAULT=memory`).
+4. Build `BoundedRetryManager` enforcing strict attempt ceilings (e.g., `max_retries = 3`) to prevent runaway recursive execution loops during autonomous remediation.
+5. Extract structured failure diagnostics (failed test names, summary blocks) for precise feedback.
+6. Implement `brahmastra test [TARGET]` CLI command with timeout controls, live progress indicators, and Rich diagnostic reporting.
+7. Author hermetic unit tests covering environment stripping, process timeouts, test execution, failed test parsing, retry budgeting, and CLI invocations; verify 100% pass rate.
+
+### Actions Taken
+- Created domain models in `src/brahmastra/domain/execution/models.py` (`TestExecutionConfig`, `TestResult`, `RetrySession`).
+- Implemented `ControlledTestRunner` in `src/brahmastra/domain/execution/test_runner.py` with process group isolation (`os.setsid`/`os.killpg`), sensitive environment stripping, and pytest failure extraction.
+- Implemented `BoundedRetryManager` in `src/brahmastra/domain/execution/retry_loop.py` with attempt budgeting and resolution detection.
+- Built application use cases in `src/brahmastra/application/use_cases/execution_use_cases.py` (`run_project_tests`, `run_verification_with_retries`).
+- Built CLI command in `src/brahmastra/cli/commands/test_cmd.py` and registered `brahmastra test` in `src/brahmastra/cli/app.py`.
+- Authored 10 new unit tests across `tests/unit/test_controlled_test_runner.py`, `tests/unit/test_bounded_retry_loop.py`, and `tests/unit/test_test_cli.py`.
+
+### Test Results
+- Command run: `.venv/bin/pytest`
+- Result: **94 passed in 2.08s (100% pass rate, 0 warnings)**
+  - Environment sanitization and process timeout enforcement: 4 passed
+  - Bounded retry manager attempt budgeting: 3 passed
+  - Test CLI flows and failure reporting: 3 passed
+  - Total full suite: 94 passed
+- Live verification:
+  - `brahmastra test tests/unit/test_cli.py`: Executed cleanly in 0.531s under 30.0s timeout limit.
+  - Timeout enforcement: Verified long-running process terminated at 0.3s threshold with clean diagnosis.
+
+### Known Limitations
+- Milestone 11 will implement the Evaluation Harness with fixed-model baselines and held-out coding benchmark tasks.
+
+### Next Step
+- Milestone 11: Evaluation harness with fixed-model baselines and held-out tasks.
+
 
 
 
