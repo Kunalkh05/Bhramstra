@@ -80,4 +80,31 @@ This document records chronological progress, architectural decisions, commands 
 - Credentials, vault references, and provider account assignments will be attached to organizations in Milestones 3 and 4.
 
 ### Next Step
-- Milestone 3: Vault abstraction and macOS Keychain integration (plus fake vault for test isolation).
+- Milestone 3: Vault abstraction and macOS Keychain integration (Completed below).
+
+---
+
+## [2026-11-09] — Milestone 3: Vault Abstraction & macOS Keychain Implementation
+
+### Objectives
+1. Define abstract `VaultInterface` contract for zero-plaintext secret storage.
+2. Implement `MacOSKeychainVault` utilizing macOS's native `/usr/bin/security` CLI.
+3. Implement `InMemoryVault` fake vault for isolated, fast test execution.
+4. Provide `get_vault()` factory supporting runtime backend selection (`BRAHMASTRA_VAULT`).
+5. Write unit tests for all vault backends and verify 100% pass rate.
+
+### Actions Taken
+- Implemented `src/brahmastra/domain/vault/interface.py` with `store_secret`, `get_secret`, `delete_secret`, and `has_secret`.
+- Implemented `src/brahmastra/infrastructure/vault/macos_keychain.py` ensuring secrets are securely passed and `-w` flag is avoided during presence probes to prevent leakage.
+- Implemented `src/brahmastra/infrastructure/vault/memory_vault.py` with non-persistent dictionary storage.
+- Added 9 unit tests with mocked subprocess calls to test keychain commands without mutating the developer's personal macOS Keychain.
+
+### Test Results
+- Command run: `.venv/bin/pytest`
+- Result: **23 passed in 0.43s (100% pass rate, 0 warnings)**
+
+### Known Limitations
+- Milestone 4 will connect this vault abstraction to database credential records and organization assignments (`brahmastra key` and `brahmastra provider` commands).
+
+### Next Step
+- Milestone 4: Credential lifecycle and organization-account assignment.
