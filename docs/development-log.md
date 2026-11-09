@@ -393,7 +393,43 @@ This document records chronological progress, architectural decisions, commands 
 - Milestone 11 will implement the Evaluation Harness with fixed-model baselines and held-out coding benchmark tasks.
 
 ### Next Step
-- Milestone 11: Evaluation harness with fixed-model baselines and held-out tasks.
+- Milestone 11: Evaluation harness with fixed-model baselines and held-out tasks (Completed below).
+
+---
+
+## [2026-11-09] — Milestone 11: Evaluation Harness with Fixed-Model Baselines & Held-Out Tasks
+
+### Objectives
+1. Implement canonical evaluation tasks (`EvalTask`) covering fundamental coding algorithms, bug fixing, regex extraction, and security sanitization.
+2. Build `EvaluationEngine` executing tasks with zero temperature for deterministic, reproducible verification.
+3. Compute objective metrics: task pass rates, generation latencies, token consumption, and integer micro-dollar costs (`cost_micro_usd`).
+4. Implement `brahmastra eval list` and `brahmastra eval run [SUITE_ID] --model <model>` CLI commands with Rich scorecard tables and JSON exports.
+5. Author hermetic unit tests with mocked provider adapters; verify 100% pass rate.
+
+### Actions Taken
+- Created domain models in `src/brahmastra/domain/evaluation/models.py` (`EvalTask`, `TaskEvalResult`, `BenchmarkSuite`, `BenchmarkReport`).
+- Defined canonical benchmark suites in `src/brahmastra/domain/evaluation/benchmarks.py` (`core` suite with 4 canonical coding/security challenges).
+- Implemented `EvaluationEngine` in `src/brahmastra/domain/evaluation/evaluator.py`.
+- Built application use cases in `src/brahmastra/application/use_cases/evaluation_use_cases.py`.
+- Built Typer CLI commands in `src/brahmastra/cli/commands/eval_cmd.py` and registered `eval` subcommand group in `src/brahmastra/cli/app.py`.
+- Authored 7 new unit tests across `tests/unit/test_evaluation_engine.py` and `tests/unit/test_eval_cli.py`.
+
+### Test Results
+- Command run: `.venv/bin/pytest -v`
+- Result: **101 passed in 2.34s (100% pass rate, 0 warnings)**
+  - Evaluation engine pattern matching and suite aggregation: 4 passed
+  - Evaluation CLI commands: 3 passed
+  - Total full suite: 101 passed
+- Live verification:
+  - `brahmastra eval list`: Successfully listed benchmark suite `core` with 4 tasks.
+  - `brahmastra eval run core --model mock-coder`: Evaluated all tasks, generated scorecard panel and token/cost summary.
+
+### Known Limitations
+- Milestone 12 will complete final security hardening, direct C `ctypes` bindings for macOS Keychain, reliability audit, and packaging distribution.
+
+### Next Step
+- Milestone 12: Security, reliability, documentation, and packaging hardening.
+
 
 
 
