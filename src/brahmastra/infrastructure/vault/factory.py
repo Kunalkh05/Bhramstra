@@ -10,6 +10,7 @@ from brahmastra.infrastructure.vault.macos_keychain import MacOSKeychainVault
 from brahmastra.infrastructure.vault.memory_vault import InMemoryVault
 
 _default_vault: Optional[VaultInterface] = None
+_default_memory_vault: Optional[InMemoryVault] = None
 
 
 def get_vault(vault_type: Optional[str] = None) -> VaultInterface:
@@ -20,14 +21,18 @@ def get_vault(vault_type: Optional[str] = None) -> VaultInterface:
       - 'keychain': MacOSKeychainVault
     Defaults to MacOSKeychainVault on Darwin (macOS), or InMemoryVault if outside macOS.
     """
-    global _default_vault
+    global _default_vault, _default_memory_vault
 
     selected = vault_type or os.environ.get("BRAHMASTRA_VAULT")
     if selected == "memory":
-        return InMemoryVault()
+        if _default_memory_vault is None:
+            _default_memory_vault = InMemoryVault()
+        return _default_memory_vault
 
     if selected == "keychain":
-        return MacOSKeychainVault()
+        if _default_vault is None:
+            _default_vault = MacOSKeychainVault()
+        return _default_vault
 
     if platform.system() == "Darwin":
         if _default_vault is None:
@@ -35,4 +40,6 @@ def get_vault(vault_type: Optional[str] = None) -> VaultInterface:
         return _default_vault
 
     # Non-macOS fallback default
-    return InMemoryVault()
+    if _default_memory_vault is None:
+        _default_memory_vault = InMemoryVault()
+    return _default_memory_vault

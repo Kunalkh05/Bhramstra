@@ -107,4 +107,51 @@ This document records chronological progress, architectural decisions, commands 
 - Milestone 4 will connect this vault abstraction to database credential records and organization assignments (`brahmastra key` and `brahmastra provider` commands).
 
 ### Next Step
-- Milestone 4: Credential lifecycle and organization-account assignment.
+- Milestone 4: Credential lifecycle and organization-account assignment (Completed below).
+
+---
+
+## [2026-11-09] — Milestone 4: Credential Lifecycle & Organization-Account Assignment
+
+### Objectives
+1. Implement database schemas for `ProviderAccountModel`, `OrganizationAssignmentModel`, and `CredentialModel`.
+2. Guarantee that SQLite stores strictly metadata and non-secret vault references (`vault_ref`), never raw API keys.
+3. Enforce organization boundary isolation: organizations can only list and access provider accounts explicitly assigned to them.
+4. Implement secure CLI commands:
+   - `brahmastra provider add <type> <name> [--endpoint <url>] [--desc <desc>] [--assign-org <org>]`
+   - `brahmastra provider list [--org <org>]`
+   - `brahmastra provider test <account>`
+   - `brahmastra key add <account> <label> [--secret-stdin]` (masked input, non-echoing prompt)
+   - `brahmastra key list [--account <name>] [--org <name>]`
+   - `brahmastra key test <label> --account <name>`
+   - `brahmastra key rotate <label> --account <name>`
+   - `brahmastra key revoke <label> --account <name>`
+   - `brahmastra key remove <label> --account <name>`
+5. Add unit and CLI integration tests; verify 100% pass rate.
+
+### Actions Taken
+- Created `src/brahmastra/domain/credentials/models.py` with `mask_secret()` helper and validated Pydantic models.
+- Implemented `ProviderAccountModel`, `OrganizationAssignmentModel`, and `CredentialModel` in `src/brahmastra/infrastructure/database/models.py`.
+- Developed application use cases in `src/brahmastra/application/use_cases/credential_use_cases.py` enforcing organization isolation.
+- Created Typer CLI subcommands in `provider.py` and `key.py` with masked prompts and Rich tables.
+- Implemented singleton caching in `factory.py` for `InMemoryVault`.
+
+### Test Results
+- Command run: `.venv/bin/pytest`
+- Result: **27 passed in 0.50s (100% pass rate, 0 warnings)**
+  - `tests/unit/test_cli.py`: 5 passed
+  - `tests/unit/test_org_cli.py`: 4 passed
+  - `tests/unit/test_org_use_cases.py`: 5 passed
+  - `tests/unit/test_vault.py`: 9 passed
+  - `tests/unit/test_credential_use_cases.py`: 2 passed
+  - `tests/unit/test_provider_key_cli.py`: 2 passed
+- Live verification:
+  - Registered `openrouter-main` and `ollama-local` assigned to `company`.
+  - Stored credential `prod-key` securely via standard input redirection.
+  - Tested credential accessibility in OS Vault (`status=ACTIVE, health=HEALTHY`).
+
+### Known Limitations
+- Milestone 5 will introduce the normalized provider interface and live adapters for OpenRouter and Ollama.
+
+### Next Step
+- Milestone 5: Provider interface plus OpenRouter and Ollama adapters.

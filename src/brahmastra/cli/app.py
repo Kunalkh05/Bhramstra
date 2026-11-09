@@ -9,6 +9,8 @@ from rich.console import Console
 from brahmastra import __version__
 from brahmastra.cli.commands.doctor import run_doctor
 from brahmastra.cli.commands.org import org_app
+from brahmastra.cli.commands.provider import provider_app
+from brahmastra.cli.commands.key import key_app
 
 app = typer.Typer(
     name="brahmastra",
@@ -19,6 +21,8 @@ app = typer.Typer(
 
 # Register sub-command groups
 app.add_typer(org_app, name="org")
+app.add_typer(provider_app, name="provider")
+app.add_typer(key_app, name="key")
 
 console = Console()
 
