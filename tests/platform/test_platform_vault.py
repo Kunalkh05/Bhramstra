@@ -125,7 +125,7 @@ def test_live_windows_cred_lifecycle():
     """Verify live Windows Credential Manager store, retrieve, and delete on Windows."""
     vault = WindowsCredentialVault(use_native=True)
     if not vault.use_native:
-        pytest.skip("Native Advapi32 bindings unavailable")
+        pytest.fail("Native Advapi32 bindings unavailable on Windows host")
 
     service = "brahmastra_live_test_svc"
     account = "live_test_user"

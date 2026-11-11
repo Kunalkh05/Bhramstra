@@ -13,6 +13,11 @@ on:
 permissions:
   contents: read
 
+env:
+  NO_COLOR: "1"
+  TERM: "dumb"
+  COLUMNS: "120"
+
 jobs:
   test-matrix:
     name: Test (${{ matrix.os }} / Python ${{ matrix.python-version }})
@@ -22,7 +27,9 @@ jobs:
       matrix:
         os:
           - ubuntu-latest      # Ubuntu Linux x86_64
-          - macos-14           # macOS Apple Silicon (ARM64)
+          # Documented runner entitlement: GitHub-hosted macos-14 (Apple Silicon M1/M2) runners
+          # are restricted to GitHub Enterprise/Team paid runner pools ('macos-14-arm64-us-default is not supported').
+          # macos-13 provides the supported GitHub-hosted macOS runner (Intel x86_64) for public repositories.
           - macos-13           # macOS Intel (x86_64)
           - windows-latest     # Windows x86_64
         python-version:

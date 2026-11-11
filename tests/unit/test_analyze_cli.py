@@ -2,6 +2,7 @@
 Unit tests for brahmastra analyze CLI command.
 """
 import json
+import re
 from pathlib import Path
 from typer.testing import CliRunner
 
@@ -14,10 +15,11 @@ def test_analyze_cli_help():
     """Verify brahmastra analyze --help output."""
     result = runner.invoke(app, ["analyze", "--help"])
     assert result.exit_code == 0
-    assert "Perform static analysis" in result.output
-    assert "--depth" in result.output
-    assert "--security" in result.output
-    assert "--json" in result.output
+    clean_output = re.sub(r"\x1b\[[0-9;]*[a-zA-Z]", "", result.output)
+    assert "Perform static analysis" in clean_output
+    assert "--depth" in clean_output
+    assert "--security" in clean_output
+    assert "--json" in clean_output
 
 
 def test_analyze_cli_execution_on_temp_repo(tmp_path: Path):

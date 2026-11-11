@@ -62,8 +62,9 @@ def test_macos_keychain_vault_store_failure(mock_run):
         vault.store_secret("service", "acc", "token")
 
 
+@patch("shutil.which", return_value="/usr/bin/security")
 @patch("subprocess.run")
-def test_macos_keychain_vault_get(mock_run):
+def test_macos_keychain_vault_get(mock_run, mock_which):
     """Verify macOS Keychain get command strips trailing newline."""
     mock_run.return_value = MagicMock(returncode=0, stdout="my-secret-key\n", stderr="")
 
@@ -78,8 +79,9 @@ def test_macos_keychain_vault_get(mock_run):
     )
 
 
+@patch("shutil.which", return_value="/usr/bin/security")
 @patch("subprocess.run")
-def test_macos_keychain_vault_get_not_found(mock_run):
+def test_macos_keychain_vault_get_not_found(mock_run, mock_which):
     """Verify get returns None when key is not found in keychain."""
     mock_run.return_value = MagicMock(returncode=44, stdout="", stderr="Item not found")
 
@@ -88,8 +90,9 @@ def test_macos_keychain_vault_get_not_found(mock_run):
     assert secret is None
 
 
+@patch("shutil.which", return_value="/usr/bin/security")
 @patch("subprocess.run")
-def test_macos_keychain_vault_delete(mock_run):
+def test_macos_keychain_vault_delete(mock_run, mock_which):
     """Verify delete executes delete-generic-password."""
     mock_run.return_value = MagicMock(returncode=0, stdout="", stderr="")
 
@@ -98,8 +101,9 @@ def test_macos_keychain_vault_delete(mock_run):
     assert res is True
 
 
+@patch("shutil.which", return_value="/usr/bin/security")
 @patch("subprocess.run")
-def test_macos_keychain_vault_has_secret(mock_run):
+def test_macos_keychain_vault_has_secret(mock_run, mock_which):
     """Verify has_secret does not use -w flag to protect secrets."""
     mock_run.return_value = MagicMock(returncode=0, stdout="", stderr="")
 

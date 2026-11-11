@@ -1,6 +1,7 @@
 """
 Unit tests for brahmastra test CLI command.
 """
+import re
 from typer.testing import CliRunner
 
 from brahmastra.cli.app import app
@@ -12,8 +13,9 @@ def test_test_cli_help():
     """Verify brahmastra test --help output."""
     result = runner.invoke(app, ["test", "--help"])
     assert result.exit_code == 0
-    assert "Execute tests in an isolated, sandboxed subprocess" in result.output
-    assert "--timeout" in result.output
+    clean_output = re.sub(r"\x1b\[[0-9;]*[a-zA-Z]", "", result.output)
+    assert "Execute tests in an isolated, sandboxed subprocess" in clean_output
+    assert "--timeout" in clean_output
 
 
 def test_test_cli_run_single_passing_test():

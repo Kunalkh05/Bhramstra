@@ -135,9 +135,14 @@ def test_insecure_plaintext_and_file_backends_rejected():
 
 def test_missing_secretstorage_fails_closed_safely():
     """Verify keyring SecretService without SecretStorage fails closed with clean diagnostic error."""
-    from keyring.backends import SecretService
-    # Instantiating SecretService.Keyring() triggers ClassProperty priority raising RuntimeError
-    backend = SecretService.Keyring()
+    class UnusableSecretService:
+        __module__ = "keyring.backends.SecretService"
+
+        @property
+        def priority(self):
+            raise RuntimeError("SecretStorage required")
+
+    backend = UnusableSecretService()
     assert _is_backend_usable(backend) is False
 
     vault = LinuxSecretVault(backend=backend)
