@@ -2,7 +2,6 @@
 Unit tests for brahmastra test CLI command.
 """
 from typer.testing import CliRunner
-import pytest
 
 from brahmastra.cli.app import app
 

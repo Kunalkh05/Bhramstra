@@ -3,7 +3,6 @@ Unit tests for brahmastra eval CLI commands.
 """
 from unittest.mock import patch
 from typer.testing import CliRunner
-import pytest
 
 from brahmastra.cli.app import app
 from brahmastra.domain.evaluation.models import BenchmarkReport, TaskEvalResult

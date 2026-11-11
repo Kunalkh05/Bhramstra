@@ -10,7 +10,6 @@ from brahmastra.domain.providers.models import GenerationRequest, ChatMessage
 from brahmastra.domain.providers.exceptions import (
     AuthenticationError,
     RateLimitError,
-    ProviderUnavailableError,
 )
 
 

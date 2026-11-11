@@ -3,7 +3,6 @@ Unit tests for ControlledTestRunner environment sanitization, timeouts, and fail
 """
 from pathlib import Path
 import sys
-import pytest
 
 from brahmastra.domain.execution.models import TestExecutionConfig
 from brahmastra.domain.execution.test_runner import ControlledTestRunner

@@ -12,7 +12,6 @@ from brahmastra.application.use_cases.credential_use_cases import register_provi
 from brahmastra.application.use_cases.usage_use_cases import (
     record_usage,
     get_usage_summary,
-    list_usage_records,
 )
 from brahmastra.infrastructure.database.models import Base
 

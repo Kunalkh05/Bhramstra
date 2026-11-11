@@ -15,7 +15,6 @@ from brahmastra.application.use_cases.org_use_cases import create_organization
 from brahmastra.application.use_cases.credential_use_cases import (
     register_provider_account,
     list_provider_accounts,
-    assign_account_to_organization,
     add_credential,
     list_credentials,
     verify_credential,

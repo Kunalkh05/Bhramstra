@@ -4,7 +4,6 @@ Unit tests for brahmastra analyze CLI command.
 import json
 from pathlib import Path
 from typer.testing import CliRunner
-import pytest
 
 from brahmastra.cli.app import app
 

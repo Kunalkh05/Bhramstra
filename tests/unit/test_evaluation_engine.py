@@ -2,7 +2,6 @@
 Unit tests for evaluation benchmarks, task pattern matching, and scorecard aggregation.
 """
 from typing import List, Optional
-import pytest
 
 from brahmastra.domain.evaluation.benchmarks import get_benchmark_suite
 from brahmastra.domain.evaluation.evaluator import EvaluationEngine

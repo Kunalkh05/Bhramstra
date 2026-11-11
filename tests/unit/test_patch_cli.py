@@ -3,7 +3,6 @@ Unit tests for brahmastra patch CLI commands.
 """
 from pathlib import Path
 from typer.testing import CliRunner
-import pytest
 
 from brahmastra.cli.app import app
 

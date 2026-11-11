@@ -2,12 +2,10 @@
 Unit tests for read-only repository inspection and AST extraction.
 """
 import hashlib
-import os
 from pathlib import Path
 import pytest
 
 from brahmastra.domain.analysis.inspector import RepositoryInspector
-from brahmastra.domain.analysis.models import CodebaseAnalysisReport
 
 
 def _compute_sha256(path: Path) -> str:

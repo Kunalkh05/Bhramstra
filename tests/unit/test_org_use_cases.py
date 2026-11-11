@@ -10,7 +10,6 @@ from brahmastra.domain.organizations.models import OrganizationCreate
 from brahmastra.application.use_cases.org_use_cases import (
     create_organization,
     list_organizations,
-    get_organization,
     get_active_organization,
     switch_active_organization,
 )
