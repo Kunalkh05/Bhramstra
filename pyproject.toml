@@ -8,24 +8,30 @@ version = "0.1.0"
 description = "Provider-independent AI orchestration platform and CLI coding assistant"
 readme = "README.md"
 requires-python = ">=3.10"
-license = { text = "Apache-2.0" }
+license = "Apache-2.0"
 authors = [
     { name = "BRAHMASTRA AI Team" }
 ]
-keywords = ["ai", "cli", "orchestration", "developer-tools", "llm"]
+keywords = ["ai", "cli", "orchestration", "developer-tools", "llm", "coding-agent"]
 classifiers = [
-    "Development Status :: 3 - Alpha",
+    "Development Status :: 4 - Beta",
     "Environment :: Console",
     "Intended Audience :: Developers",
-    "License :: OSI Approved :: Apache Software License",
+    "Intended Audience :: Information Technology",
+    "Operating System :: OS Independent",
     "Operating System :: MacOS",
+    "Operating System :: MacOS :: MacOS X",
     "Operating System :: POSIX :: Linux",
+    "Operating System :: Microsoft :: Windows",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
     "Topic :: Software Development :: Build Tools",
+    "Topic :: Software Development :: Quality Assurance",
+    "Topic :: Security",
     "Topic :: Utilities",
 ]
 dependencies = [
@@ -34,6 +40,7 @@ dependencies = [
     "pydantic>=2.5.0",
     "sqlalchemy>=2.0.0",
     "httpx>=0.27.0",
+    "keyring>=24.0.0",
 ]
 
 [project.optional-dependencies]
@@ -42,14 +49,37 @@ dev = [
     "respx>=0.21.0",
 ]
 
+[project.urls]
+Homepage = "https://github.com/Kunalkh05/Bhramstra"
+Documentation = "https://github.com/Kunalkh05/Bhramstra#readme"
+Repository = "https://github.com/Kunalkh05/Bhramstra.git"
+Issues = "https://github.com/Kunalkh05/Bhramstra/issues"
+
 [project.scripts]
 brahmastra = "brahmastra.cli.app:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
 
+[tool.setuptools.package-data]
+brahmastra = ["py.typed"]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 python_files = ["test_*.py"]
 python_functions = ["test_*"]
 addopts = "-v"
+
+[tool.ruff]
+target-version = "py310"
+line-length = 120
+
+[tool.ruff.lint]
+select = ["E", "F", "W"]
+ignore = ["E501", "F841"]
+
+[tool.mypy]
+python_version = "3.10"
+ignore_missing_imports = true
+check_untyped_defs = false
+plugins = ["pydantic.mypy"]
