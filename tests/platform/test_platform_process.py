@@ -13,6 +13,9 @@ from brahmastra.domain.execution.test_runner import ControlledTestRunner, termin
 
 def test_terminate_process_tree_posix():
     """Verify POSIX process tree termination uses killpg with SIGKILL."""
+    if sys.platform == "win32":
+        pytest.skip("POSIX process termination is not applicable on Windows")
+
     mock_proc = MagicMock()
     mock_proc.pid = 9999
 

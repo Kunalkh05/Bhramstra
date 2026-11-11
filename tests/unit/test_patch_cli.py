@@ -30,7 +30,8 @@ def test_patch_cli_preview(tmp_path: Path):
     result = runner.invoke(app, ["patch", "preview", str(orig_file), str(repl_file), "--root", str(tmp_path)])
     assert result.exit_code == 0
     assert "Proposed Diff" in result.output
-    assert "+1 / -1" in result.output
+    normalized_output = " ".join(result.output.split())
+    assert "+1 / -1" in normalized_output
     assert "lines" in result.output
 
     # Original file must remain unmodified
