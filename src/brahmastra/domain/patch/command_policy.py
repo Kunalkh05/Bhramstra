@@ -23,25 +23,36 @@ class CommandPolicyEngine:
         re.compile(r"\b(curl|wget)\s+[^|]+\|\s*(sh|bash|zsh)"),   # remote script execution
         re.compile(r"\bchmod\s+(-[rR]\s+)?(777|a\+[rwx]{3})"),
         re.compile(r">\s*/dev/(sd|hd|nvme)"),
+        # Windows destructive commands and download cradles
+        re.compile(r"\b(del|erase)\s+.*(/[sS]|/[qQ]|\*|[A-Za-z]:\\)", re.IGNORECASE),
+        re.compile(r"\b(rmdir|rd)\s+.*(/[sS]|/[qQ])", re.IGNORECASE),
+        re.compile(r"\bformat\s+[a-zA-Z]:", re.IGNORECASE),
+        re.compile(r"\breg\s+(delete|add)\b", re.IGNORECASE),
+        re.compile(r"\bcertutil\s+(-urlcache|-decode)\b", re.IGNORECASE),
+        re.compile(r"\b(powershell|pwsh)\b.*(-enc|-encodedcommand|-e\b|invoke-webrequest|iwr|downloadstring)", re.IGNORECASE),
+        re.compile(r"\bbitsadmin\s+/transfer\b", re.IGNORECASE),
     ]
 
     SENSITIVE_TARGET_PATTERNS: List[Pattern] = [
         re.compile(
             r"(\.env|\.git/config|\.netrc|\.aws/|id_rsa|id_ecdsa|id_ed25519|\.ssh/|"
             r"/etc/shadow|/etc/master\.passwd|secrets?\.(json|yaml|yml)|credentials?\.(json|yaml|yml)|"
-            r"\.npmrc|\.pypirc|production\.key|\.key$|\.pem$)",
+            r"\.npmrc|\.pypirc|production\.key|\.key$|\.pem$|"
+            r"\bSAM\b|\bSYSTEM\b|\bSECURITY\b|\bntds\.dit\b)",
             re.IGNORECASE,
         ),
     ]
 
     SAFE_COMMAND_PREFIXES: List[str] = [
         "ls",
+        "dir",
         "git status",
         "git diff",
         "git log",
         "pwd",
         "whoami",
         "which",
+        "where",
         "pytest",
         "python -m pytest",
         "python --version",
@@ -50,9 +61,12 @@ class CommandPolicyEngine:
 
     SAFE_EXECUTABLES: Set[str] = {
         "ls",
+        "dir",
         "pwd",
         "whoami",
         "which",
+        "where",
+        "where.exe",
         "pytest",
         "brahmastra",
     }
@@ -64,7 +78,7 @@ class CommandPolicyEngine:
         "branch",
     }
 
-    UNSAFE_SHELL_METACHARS: Pattern = re.compile(r"[\$`\n\r><|&;(){}\!]")
+    UNSAFE_SHELL_METACHARS: Pattern = re.compile(r"[\$`\n\r><|&;(){}\!%^]")
 
     @classmethod
     def evaluate(cls, command: str, working_dir: Path, explanation: str = "") -> ShellCommandAction:

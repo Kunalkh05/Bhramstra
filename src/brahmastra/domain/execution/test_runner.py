@@ -6,11 +6,42 @@ import os
 import re
 import signal
 import subprocess
+import sys
 import time
-from pathlib import Path
-from typing import Dict, List, Set
+from typing import Any, Dict, List, Optional, Set
 
 from brahmastra.domain.execution.models import TestExecutionConfig, TestResult
+
+
+def terminate_process_tree(proc: subprocess.Popen) -> None:
+    """
+    Terminates the subprocess and all descendant child processes cleanly.
+    - On Windows: Uses taskkill /F /T /PID to recursively kill process tree.
+    - On POSIX: Uses os.killpg to signal the entire process group with SIGKILL.
+    """
+    if sys.platform == "win32":
+        try:
+            subprocess.run(
+                ["taskkill", "/F", "/T", "/PID", str(proc.pid)],
+                capture_output=True,
+                check=False,
+            )
+        except Exception:
+            try:
+                proc.kill()
+            except Exception:
+                pass
+    else:
+        try:
+            if hasattr(os, "killpg") and hasattr(os, "getpgid"):
+                os.killpg(os.getpgid(proc.pid), signal.SIGKILL)
+            else:
+                proc.kill()
+        except Exception:
+            try:
+                proc.kill()
+            except Exception:
+                pass
 
 
 class ControlledTestRunner:
@@ -41,7 +72,7 @@ class ControlledTestRunner:
         cls,
         base_env: Dict[str, str],
         strip_sensitive: bool = True,
-        overrides: Dict[str, str] = None,
+        overrides: Optional[Dict[str, str]] = None,
     ) -> Dict[str, str]:
         """
         Creates an isolated environment by stripping sensitive keys unless explicitly preserved.
@@ -85,34 +116,31 @@ class ControlledTestRunner:
         exit_code = -1
 
         try:
-            # Use os.setsid on POSIX systems to create a dedicated process group
-            proc = subprocess.Popen(
-                config.command,
-                cwd=str(config.working_dir),
-                env=sanitized_env,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                text=True,
-                preexec_fn=os.setsid if hasattr(os, "setsid") else None,
-            )
+            popen_kwargs: Dict[str, Any] = {
+                "cwd": str(config.working_dir),
+                "env": sanitized_env,
+                "stdout": subprocess.PIPE,
+                "stderr": subprocess.PIPE,
+                "text": True,
+            }
+            if sys.platform == "win32":
+                popen_kwargs["creationflags"] = getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0x00000200)
+            elif hasattr(os, "setsid"):
+                popen_kwargs["preexec_fn"] = os.setsid
 
+            proc = subprocess.Popen(config.command, **popen_kwargs)
             stdout_str, stderr_str = proc.communicate(timeout=config.timeout_seconds)
             exit_code = proc.returncode
 
         except subprocess.TimeoutExpired:
             timed_out = True
-            # Terminate entire process group cleanly
-            try:
-                if hasattr(os, "killpg") and hasattr(os, "getpgid"):
-                    os.killpg(os.getpgid(proc.pid), signal.SIGKILL)
-                else:
-                    proc.kill()
-            except Exception:
-                pass
+            terminate_process_tree(proc)
             stdout_str, stderr_str = proc.communicate()
             exit_code = -signal.SIGKILL if hasattr(signal, "SIGKILL") else -1
 
         except Exception as ex:
+            if "proc" in locals():
+                terminate_process_tree(proc)
             stderr_str = f"Execution failed: {str(ex)}"
             exit_code = 1
 

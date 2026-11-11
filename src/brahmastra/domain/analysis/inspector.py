@@ -196,7 +196,7 @@ class RepositoryInspector:
 
         for root, dirs, files in os.walk(self.target_path, followlinks=False):
             current_root = Path(root).resolve()
-            
+
             # Prevent infinite recursion loops via symlinks
             real_path = str(current_root)
             if real_path in visited_real_paths:

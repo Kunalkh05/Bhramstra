@@ -3,7 +3,7 @@ Domain models for repository inspection and codebase analysis.
 """
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
-from typing import Dict, List, Optional
+from typing import List, Optional
 
 
 @dataclass(frozen=True)

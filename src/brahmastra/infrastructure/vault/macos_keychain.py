@@ -5,6 +5,7 @@ Eliminates command-line argument exposure in process table (argv).
 """
 
 import sys
+import shutil
 import ctypes
 from ctypes import c_char_p, c_uint32, c_void_p, POINTER, byref
 import subprocess
@@ -182,8 +183,15 @@ class MacOSKeychainVault(VaultInterface):
             if status == errSecSuccess:
                 val = ctypes.string_at(pwd_data, pwd_len.value).decode("utf-8")
                 self._SecKeychainItemFreeContent(None, pwd_data)
+                if hasattr(self, "_CFRelease") and item_ref:
+                    self._CFRelease(item_ref)
                 self._cache[cache_key] = val
                 return val
+            if hasattr(self, "_CFRelease") and item_ref:
+                self._CFRelease(item_ref)
+            return None
+
+        if not shutil.which(self.executable_path):
             return None
 
         cmd = [
@@ -227,7 +235,14 @@ class MacOSKeychainVault(VaultInterface):
                 if pwd_data:
                     self._SecKeychainItemFreeContent(None, pwd_data)
                 del_status = self._SecKeychainItemDelete(item_ref)
+                if hasattr(self, "_CFRelease") and item_ref:
+                    self._CFRelease(item_ref)
                 return del_status == errSecSuccess
+            if hasattr(self, "_CFRelease") and item_ref:
+                self._CFRelease(item_ref)
+            return False
+
+        if not shutil.which(self.executable_path):
             return False
 
         cmd = [
@@ -266,7 +281,14 @@ class MacOSKeychainVault(VaultInterface):
             if status == errSecSuccess:
                 if pwd_data:
                     self._SecKeychainItemFreeContent(None, pwd_data)
+                if hasattr(self, "_CFRelease") and item_ref:
+                    self._CFRelease(item_ref)
                 return True
+            if hasattr(self, "_CFRelease") and item_ref:
+                self._CFRelease(item_ref)
+            return False
+
+        if not shutil.which(self.executable_path):
             return False
 
         cmd = [

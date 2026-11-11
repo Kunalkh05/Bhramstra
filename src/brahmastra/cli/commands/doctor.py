@@ -2,12 +2,10 @@
 System diagnostics and environment check ('doctor' command).
 """
 
-import os
 import platform
 import shutil
 import sqlite3
 import sys
-from pathlib import Path
 from rich.console import Console
 from rich.table import Table
 
@@ -41,15 +39,17 @@ def run_doctor() -> bool:
         all_passed = False
         table.add_row("Runtime", "Python Version", "[red]FAIL[/red]", f"Python {py_ver_str} (Python 3.10+ required)")
 
-    # 2. Operating System Check (macOS / Darwin focus)
+    # 2. Operating System Check (Cross-platform support)
     os_name = platform.system()
     os_release = platform.release()
     if os_name == "Darwin":
         table.add_row("Platform", "Operating System", "[green]PASS[/green]", f"macOS (Darwin {os_release})")
     elif os_name == "Linux":
         table.add_row("Platform", "Operating System", "[green]PASS[/green]", f"Linux ({os_release})")
+    elif os_name == "Windows":
+        table.add_row("Platform", "Operating System", "[green]PASS[/green]", f"Windows ({os_release})")
     else:
-        table.add_row("Platform", "Operating System", "[yellow]WARN[/yellow]", f"{os_name} (Darwin/Linux recommended)")
+        table.add_row("Platform", "Operating System", "[yellow]WARN[/yellow]", f"{os_name}")
 
     # 3. CPU Architecture Check (Apple Silicon ARM64 vs Intel x86_64)
     arch = platform.machine().lower()
@@ -72,15 +72,25 @@ def run_doctor() -> bool:
         all_passed = False
         table.add_row("Database", "SQLite Engine", "[red]FAIL[/red]", f"Error initializing SQLite: {exc}")
 
-    # 5. OS Vault / Keychain Tool Check (for macOS security tool)
+    # 5. OS Vault Check
     if os_name == "Darwin":
-        security_path = shutil.which("security")
-        if security_path:
-            table.add_row("Vault", "macOS Keychain CLI", "[green]PASS[/green]", f"Found at {security_path}")
-        else:
-            table.add_row("Vault", "macOS Keychain CLI", "[yellow]WARN[/yellow]", "'security' CLI tool not in PATH")
+        try:
+            import ctypes
+            ctypes.cdll.LoadLibrary("/System/Library/Frameworks/Security.framework/Security")
+            table.add_row("Vault", "Credential Vault", "[green]PASS[/green]", "macOS Keychain (Security.framework native)")
+        except Exception as exc:
+            table.add_row("Vault", "Credential Vault", "[yellow]WARN[/yellow]", f"Security.framework error: {exc}")
+    elif os_name == "Windows":
+        try:
+            import ctypes
+            if hasattr(ctypes, "windll") and hasattr(ctypes.windll, "Advapi32"):
+                table.add_row("Vault", "Credential Vault", "[green]PASS[/green]", "Windows Credential Manager (Advapi32 native)")
+            else:
+                table.add_row("Vault", "Credential Vault", "[green]PASS[/green]", "Windows Credential Manager supported")
+        except Exception as exc:
+            table.add_row("Vault", "Credential Vault", "[yellow]WARN[/yellow]", f"Advapi32 error: {exc}")
     else:
-        table.add_row("Vault", "OS Vault", "[green]PASS[/green]", "Non-Darwin fallback vault supported")
+        table.add_row("Vault", "Credential Vault", "[green]PASS[/green]", "Linux Encrypted Vault (PBKDF2/HMAC authenticated)")
 
     # 6. Workspace & Configuration Storage Permissions
     config_dir = get_storage_dir()
@@ -102,7 +112,10 @@ def run_doctor() -> bool:
         table.add_row("Inference", "Ollama Local Engine", "[yellow]INFO[/yellow]", "Not in PATH (install for offline inference)")
 
     # 8. Sandbox & Subprocess Capabilities
-    table.add_row("Sandbox", "Process Isolation", "[green]PASS[/green]", "Process group (POSIX setsid) active")
+    if os_name == "Windows":
+        table.add_row("Sandbox", "Process Isolation", "[green]PASS[/green]", "Windows process group (CREATE_NEW_PROCESS_GROUP + taskkill)")
+    else:
+        table.add_row("Sandbox", "Process Isolation", "[green]PASS[/green]", "Process group (POSIX setsid) active")
 
     console.print(table)
 

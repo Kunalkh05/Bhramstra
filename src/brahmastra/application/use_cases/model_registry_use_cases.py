@@ -14,7 +14,6 @@ from brahmastra.infrastructure.database.models import (
     CachedModelModel,
     OrganizationModel,
     OrganizationAssignmentModel,
-    CredentialModel,
 )
 from brahmastra.infrastructure.database.session import get_session
 from brahmastra.infrastructure.providers.factory import get_provider_adapter

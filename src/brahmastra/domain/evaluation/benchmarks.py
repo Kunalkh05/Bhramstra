@@ -1,7 +1,7 @@
 """
 Canonical held-out evaluation tasks and benchmark suites for model verification.
 """
-from typing import Dict, List, Optional
+from typing import Dict, Optional
 from brahmastra.domain.evaluation.models import BenchmarkSuite, EvalTask
 
 

@@ -37,7 +37,7 @@ def usage_main(
     target_org = org or get_active_org_name()
     try:
         summary = get_usage_summary(org_name=target_org)
-        console.print(f"\n[bold cyan]BRAHMASTRA Usage Report[/bold cyan]")
+        console.print("\n[bold cyan]BRAHMASTRA Usage Report[/bold cyan]")
         if target_org:
             console.print(f"Organization: [bold green]{target_org}[/bold green]\n")
         else:

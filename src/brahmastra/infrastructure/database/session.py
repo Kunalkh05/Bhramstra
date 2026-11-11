@@ -32,7 +32,7 @@ def get_engine(db_path: Optional[Path] = None) -> Engine:
     global _engine, _session_factory
     target_path = db_path or get_db_path()
     db_url = f"sqlite:///{target_path}"
-    
+
     # Check if existing engine matches target
     if _engine is not None and str(_engine.url) == db_url:
         return _engine

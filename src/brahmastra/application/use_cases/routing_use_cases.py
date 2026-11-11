@@ -2,7 +2,7 @@
 Application use cases for Explainable Routing and Routed Execution.
 """
 
-from typing import Optional, Tuple, List
+from typing import Optional, Tuple
 import time
 from sqlalchemy import Engine
 

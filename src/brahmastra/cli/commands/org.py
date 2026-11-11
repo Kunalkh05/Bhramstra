@@ -38,7 +38,7 @@ def org_add(
         org = create_organization(req)
         console.print(f"[bold green]✓ Created organization '{org.name}'[/bold green]")
         if org.is_active:
-            console.print(f"[dim]Set as current active organization.[/dim]")
+            console.print("[dim]Set as current active organization.[/dim]")
     except ValueError as exc:
         console.print(f"[bold red]Error:[/bold red] {exc}")
         raise typer.Exit(code=1)

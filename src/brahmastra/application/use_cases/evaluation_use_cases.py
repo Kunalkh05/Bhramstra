@@ -57,13 +57,12 @@ def evaluate_model_on_suite(
                         OrganizationAssignmentModel.account_id == ProviderAccountModel.id,
                     )
                     .filter(
-                        OrganizationAssignmentModel.org_id == org.id,
+                        OrganizationAssignmentModel.organization_id == org.id,
                         ProviderAccountModel.provider_type == provider_name.lower(),
                     )
                     .first()
                 )
                 if account:
-                    account_label = account.account_label
                     # Find active credential
                     cred = (
                         session.query(CredentialModel)
@@ -72,7 +71,8 @@ def evaluate_model_on_suite(
                     )
                     if cred:
                         vault = get_vault()
-                        api_key = vault.get_secret(cred.vault_key_id)
+                        service_name = f"brahmastra:{account.provider_type}"
+                        api_key = vault.get_secret(service=service_name, account=account.name)
 
     adapter = get_provider_adapter(provider_name.lower())
     return EvaluationEngine.run_suite(

@@ -43,7 +43,10 @@ class EvaluationEngine:
 
         start_time = time.perf_counter()
         try:
-            response = adapter.generate(request=request, api_key=api_key)
+            try:
+                response = adapter.generate(request=request, secret=api_key)
+            except TypeError:
+                response = adapter.generate(request=request, api_key=api_key)  # type: ignore[call-arg]
             latency_ms = round((time.perf_counter() - start_time) * 1000, 2)
             output_text = response.content
 

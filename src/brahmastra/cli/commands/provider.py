@@ -109,7 +109,7 @@ def provider_test(
 
         creds = list_credentials(account_name=account_name)
         active_creds = [c for c in creds if c.status.value == "ACTIVE"]
-        
+
         console.print(f"\n[bold cyan]Diagnostic Check for Account '{account_name}'[/bold cyan] ({acc.provider_type})")
         console.print(f"Endpoint: {acc.endpoint or 'Default'}")
         console.print(f"Credentials registered: {len(creds)} ({len(active_creds)} active)\n")

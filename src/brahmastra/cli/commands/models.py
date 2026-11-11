@@ -9,16 +9,12 @@ from rich.table import Table
 
 from brahmastra.application.use_cases.credential_use_cases import (
     list_provider_accounts,
-    list_credentials,
 )
 from brahmastra.application.use_cases.model_registry_use_cases import (
     sync_models_for_account,
     get_cached_models,
 )
 from brahmastra.infrastructure.config import get_active_org_name
-from brahmastra.infrastructure.providers.factory import get_provider_adapter
-from brahmastra.infrastructure.vault.factory import get_vault
-from brahmastra.domain.providers.exceptions import ProviderError
 
 models_app = typer.Typer(
     name="models",

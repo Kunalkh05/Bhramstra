@@ -16,7 +16,7 @@ from brahmastra.application.use_cases.patch_use_cases import (
     propose_patch,
     rollback_patch_safely,
 )
-from brahmastra.domain.patch.models import CommandRiskLevel, PatchStatus
+from brahmastra.domain.patch.models import CommandRiskLevel
 
 patch_app = typer.Typer(help="Review unified diffs, approve patches, and inspect command execution.")
 console = Console()
@@ -81,7 +81,7 @@ def prompt_command_approval(
         console.print("[bold yellow]Auto-approving safe read-only command due to --yes flag.[/bold yellow]")
         return True
 
-    return Confirm.ask(f"Execute this shell command?", default=False)
+    return Confirm.ask("Execute this shell command?", default=False)
 
 
 @patch_app.command("preview")

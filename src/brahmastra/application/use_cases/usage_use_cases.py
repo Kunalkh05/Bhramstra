@@ -4,7 +4,7 @@ Application use cases for recording and analyzing request-level token and cost u
 
 from typing import List, Optional
 from datetime import datetime, timezone
-from sqlalchemy import select, func
+from sqlalchemy import select
 from sqlalchemy import Engine
 
 from brahmastra.domain.observability.models import (

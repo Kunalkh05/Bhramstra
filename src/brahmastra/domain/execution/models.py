@@ -4,7 +4,7 @@ Domain models for controlled test execution, sandboxing, and bounded retries.
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Dict, List
 
 
 @dataclass
