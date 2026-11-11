@@ -48,12 +48,13 @@ class LogSanitizer(logging.Filter):
             return "key=[REDACTED_SECRET]"
 
         val_len = len(raw_val)
+        label = (group_name or "SECRET").upper()
         if val_len <= (self.preserve_prefix + self.preserve_suffix + 2):
-            return f"[{group_name.upper()}_REDACTED]"
+            return f"[{label}_REDACTED]"
 
         head = raw_val[:self.preserve_prefix]
         tail = raw_val[-self.preserve_suffix:]
-        return f"{head}...[REDACTED_{group_name.upper()}]...{tail}"
+        return f"{head}...[REDACTED_{label}]...{tail}"
 
     def sanitize(self, text: str) -> str:
         """Sanitizes text by replacing any matched secret patterns with redactions."""
