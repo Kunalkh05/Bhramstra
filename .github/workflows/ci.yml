@@ -17,6 +17,8 @@ env:
   NO_COLOR: "1"
   TERM: "dumb"
   COLUMNS: "120"
+  PYTHONIOENCODING: "utf-8"
+  PYTHONUTF8: "1"
 
 jobs:
   test-matrix:
@@ -111,6 +113,9 @@ jobs:
       - name: Fresh installation smoke test (Windows)
         if: runner.os == 'Windows'
         shell: pwsh
+        env:
+          PYTHONIOENCODING: "utf-8"
+          PYTHONUTF8: "1"
         run: |
           python -m venv test_env
           $wheel = (Get-ChildItem dist/*.whl | Select-Object -First 1).FullName

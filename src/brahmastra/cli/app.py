@@ -2,9 +2,22 @@
 Main CLI Application entrypoint for BRAHMASTRA AI.
 """
 
+import sys
 from typing import Optional
 import typer
 from rich.console import Console
+
+# Configure UTF-8 standard output streams defensively across cross-platform consoles
+if hasattr(sys.stdout, "reconfigure"):
+    try:
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:
+        pass
+if hasattr(sys.stderr, "reconfigure"):
+    try:
+        sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:
+        pass
 
 from brahmastra import __version__
 from brahmastra.cli.commands.doctor import run_doctor
