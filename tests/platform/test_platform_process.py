@@ -17,8 +17,8 @@ def test_terminate_process_tree_posix():
     mock_proc.pid = 9999
 
     with patch("sys.platform", "darwin"), \
-         patch("os.getpgid", return_value=9999) as mock_getpgid, \
-         patch("os.killpg") as mock_killpg:
+         patch("os.getpgid", return_value=9999, create=True) as mock_getpgid, \
+         patch("os.killpg", create=True) as mock_killpg:
         terminate_process_tree(mock_proc)
         mock_getpgid.assert_called_once_with(9999)
         mock_killpg.assert_called_once_with(9999, signal.SIGKILL)

@@ -3,7 +3,9 @@ Unit and integration tests for Linux Secret Service vault (org.freedesktop.secre
 Distinguishes hermetic mocked unit tests from live Linux integration tests.
 """
 
+import os
 import sys
+from pathlib import Path
 from unittest.mock import MagicMock
 import pytest
 from keyring.errors import KeyringError, NoKeyringError
@@ -261,10 +263,10 @@ def test_no_plaintext_credential_persistence(tmp_path, monkeypatch):
     secret_val = "SUPER-SECRET-PLAINTEXT-999"
     vault.store_secret("openrouter", "acc-prod", secret_val)
 
-    # Inspect all files created in storage dir
-    for root, _, files in tmp_path.walk():
+    # Inspect all files created in storage dir (portable os.walk for Python 3.10+)
+    for root, _, files in os.walk(tmp_path):
         for file in files:
-            file_path = root / file
+            file_path = Path(root) / file
             assert secret_val.encode() not in file_path.read_bytes(), f"Plaintext secret found in {file_path}"
 
     # Verify vault.enc is NOT created

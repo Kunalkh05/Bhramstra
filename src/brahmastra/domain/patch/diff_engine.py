@@ -111,7 +111,7 @@ class DiffEngine:
             with open(safe_path, "r", encoding="utf-8", errors="replace") as f:
                 original_content = f.read()
 
-        rel_path = str(safe_path.relative_to(root_dir.resolve()))
+        rel_path = safe_path.relative_to(root_dir.resolve()).as_posix()
         diff_text, added, removed = cls.generate_unified_diff(
             original_content, new_content, rel_path
         )

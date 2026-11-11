@@ -27,10 +27,7 @@ jobs:
       matrix:
         os:
           - ubuntu-latest      # Ubuntu Linux x86_64
-          # Documented runner entitlement: GitHub-hosted macos-14 (Apple Silicon M1/M2) runners
-          # are restricted to GitHub Enterprise/Team paid runner pools ('macos-14-arm64-us-default is not supported').
-          # macos-13 provides the supported GitHub-hosted macOS runner (Intel x86_64) for public repositories.
-          - macos-13           # macOS Intel (x86_64)
+          - macos-latest       # macOS Apple Silicon (Standard GA runner)
           - windows-latest     # Windows x86_64
         python-version:
           - "3.10"             # Project minimum declared version
@@ -116,7 +113,7 @@ jobs:
         shell: pwsh
         run: |
           python -m venv test_env
-          $wheel = (Get-Item dist/*.whl).FullName
+          $wheel = (Get-ChildItem dist/*.whl | Select-Object -First 1).FullName
           test_env\Scripts\pip.exe install $wheel
           test_env\Scripts\brahmastra.exe --version
           test_env\Scripts\brahmastra.exe doctor

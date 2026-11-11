@@ -239,7 +239,7 @@ class RepositoryInspector:
         estimate tokens, and scan for secrets.
         """
         try:
-            rel_path = str(file_path.relative_to(self.target_path))
+            rel_path = file_path.relative_to(self.target_path).as_posix()
         except ValueError:
             rel_path = file_path.name
 
