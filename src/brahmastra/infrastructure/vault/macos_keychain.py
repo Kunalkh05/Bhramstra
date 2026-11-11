@@ -77,6 +77,12 @@ class MacOSKeychainVault(VaultInterface):
             self._SecKeychainItemFreeContent = self._sec.SecKeychainItemFreeContent
             self._SecKeychainItemFreeContent.argtypes = [c_void_p, c_void_p]
             self._SecKeychainItemFreeContent.restype = ctypes.c_int32
+
+            # CFRelease from CoreFoundation
+            self._cf = ctypes.cdll.LoadLibrary("/System/Library/Frameworks/CoreFoundation.framework/CoreFoundation")
+            self._CFRelease = self._cf.CFRelease
+            self._CFRelease.argtypes = [c_void_p]
+            self._CFRelease.restype = None
         except Exception:
             self.use_native = False
 
@@ -84,6 +90,7 @@ class MacOSKeychainVault(VaultInterface):
         """
         Store or update a secret in macOS Keychain.
         Uses native in-memory pointers to prevent argument vector leakage.
+        Fails closed if native Security.framework bindings are unavailable (BRAH-SEC-002).
         """
         if not secret:
             raise ValueError("Secret cannot be empty.")
@@ -116,6 +123,8 @@ class MacOSKeychainVault(VaultInterface):
                     len(secret_bytes),
                     secret_bytes,
                 )
+                if hasattr(self, "_CFRelease") and item_ref:
+                    self._CFRelease(item_ref)
                 if mod_status != errSecSuccess:
                     raise RuntimeError(f"Failed to update secret in macOS Keychain: OSStatus {mod_status}")
             else:
@@ -130,27 +139,19 @@ class MacOSKeychainVault(VaultInterface):
                     secret_bytes,
                     byref(add_item_ref),
                 )
+                if hasattr(self, "_CFRelease") and add_item_ref:
+                    self._CFRelease(add_item_ref)
                 if add_status != errSecSuccess:
                     raise RuntimeError(f"Failed to store secret in macOS Keychain: OSStatus {add_status}")
 
             self._cache[(service, account)] = secret
             return f"vault:{service}:{account}"
 
-        cmd = [
-            self.executable_path,
-            "add-generic-password",
-            "-a", account,
-            "-s", service,
-            "-w", secret,
-            "-U",
-        ]
-        res = subprocess.run(cmd, capture_output=True, text=True)
-        if res.returncode != 0:
-            err_msg = res.stderr.strip() or f"Process exited with code {res.returncode}"
-            raise RuntimeError(f"Failed to store secret in macOS Keychain: {err_msg}")
-
-        self._cache[(service, account)] = secret
-        return f"vault:{service}:{account}"
+        # Insecure subprocess fallback is disabled to prevent plaintext secrets in argv (BRAH-SEC-002)
+        raise RuntimeError(
+            "Native macOS Security.framework C-level bindings are unavailable. "
+            "Insecure command-line argument fallback is disabled for security (BRAH-SEC-002)."
+        )
 
     def get_secret(self, service: str, account: str) -> Optional[str]:
         """

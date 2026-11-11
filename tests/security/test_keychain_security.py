@@ -54,3 +54,14 @@ def test_native_keychain_zero_subprocess_argv_exposure(mock_subprocess):
         # Cleanup
         vault.delete_secret(service, account)
         mock_subprocess.assert_not_called()
+
+
+@patch("subprocess.run")
+def test_keychain_vault_fails_closed_when_native_bindings_unavailable(mock_subprocess):
+    """Verify that if native bindings are unavailable, store_secret fails closed rather than leaking in argv."""
+    vault = MacOSKeychainVault(use_native=False)
+    with pytest.raises(RuntimeError, match="unavailable"):
+        vault.store_secret("service", "account", "secret123")
+
+    # Must NOT call subprocess.run with -w secret
+    mock_subprocess.assert_not_called()

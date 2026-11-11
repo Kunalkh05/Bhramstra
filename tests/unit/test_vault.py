@@ -46,28 +46,19 @@ def test_in_memory_vault_rejects_empty_secret():
 
 
 @patch("subprocess.run")
-def test_macos_keychain_vault_store(mock_run):
-    """Verify macOS Keychain store command uses -U flag."""
-    mock_run.return_value = MagicMock(returncode=0, stdout="", stderr="")
-
-    vault = MacOSKeychainVault(executable_path="/usr/bin/security", use_native=False)
-    ref = vault.store_secret("brahmastra-service", "acc-openrouter", "secret-token")
-    assert ref == "vault:brahmastra-service:acc-openrouter"
-
-    mock_run.assert_called_once_with(
-        ["/usr/bin/security", "add-generic-password", "-a", "acc-openrouter", "-s", "brahmastra-service", "-w", "secret-token", "-U"],
-        capture_output=True,
-        text=True,
-    )
+def test_macos_keychain_vault_store_fails_closed_when_native_bindings_unavailable(mock_run):
+    """Verify storing secret without native bindings fails closed rather than leaking argv (BRAH-SEC-002)."""
+    vault = MacOSKeychainVault(use_native=False)
+    with pytest.raises(RuntimeError, match="unavailable"):
+        vault.store_secret("brahmastra-service", "acc-openrouter", "secret-token")
+    mock_run.assert_not_called()
 
 
 @patch("subprocess.run")
 def test_macos_keychain_vault_store_failure(mock_run):
     """Verify macOS Keychain store failure raises RuntimeError."""
-    mock_run.return_value = MagicMock(returncode=1, stdout="", stderr="Access denied")
-
     vault = MacOSKeychainVault(use_native=False)
-    with pytest.raises(RuntimeError, match="Failed to store secret"):
+    with pytest.raises(RuntimeError, match="unavailable"):
         vault.store_secret("service", "acc", "token")
 
 

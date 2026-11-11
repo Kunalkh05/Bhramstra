@@ -13,7 +13,7 @@ from brahmastra.infrastructure.database.models import Base
 
 _engine: Optional[Engine] = None
 _session_factory: Optional[sessionmaker[Session]] = None
-_initialized_engine_ids: Set[int] = set()
+_initialized_engine_keys: Set[str] = set()
 
 
 @event.listens_for(Engine, "connect")
@@ -50,10 +50,15 @@ def get_engine(db_path: Optional[Path] = None) -> Engine:
 def init_db(engine: Optional[Engine] = None) -> None:
     """Initialize database tables once per engine."""
     eng = engine or get_engine()
-    eng_id = id(eng)
-    if eng_id not in _initialized_engine_ids:
+    eng_url = str(eng.url)
+    if eng_url in ("sqlite://", "sqlite:///:memory:"):
+        eng_key = f"{id(eng)}:{eng_url}"
+    else:
+        eng_key = eng_url
+
+    if eng_key not in _initialized_engine_keys:
         Base.metadata.create_all(bind=eng)
-        _initialized_engine_ids.add(eng_id)
+        _initialized_engine_keys.add(eng_key)
 
 
 @contextmanager

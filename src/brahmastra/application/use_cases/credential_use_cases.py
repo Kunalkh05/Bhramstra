@@ -38,6 +38,8 @@ def _verify_account_organization_scoping(
     Verify that the account is accessible within the given or active organization scope.
     If org_name is provided, or active org is set, ensures the account has an assignment
     to that organization (BRAH-SEC-001).
+    If no org context is provided but the account belongs to an organization,
+    access is strictly forbidden (PermissionError).
     """
     target_org = org_name
     if not target_org:
@@ -50,7 +52,18 @@ def _verify_account_organization_scoping(
                 target_org = active
 
     if not target_org:
-        return
+        # Check if this account is assigned to ANY organization
+        has_assignments = session.scalar(
+            select(OrganizationAssignmentModel).where(
+                OrganizationAssignmentModel.account_id == account.id
+            )
+        )
+        if has_assignments:
+            raise PermissionError(
+                f"Account '{account.name}' is assigned to an organization. "
+                "An active organization context or explicit --org is required."
+            )
+        return  # Unassigned local developer test account
 
     org = session.scalar(
         select(OrganizationModel).where(OrganizationModel.name == target_org)
@@ -124,16 +137,19 @@ def list_provider_accounts(
     engine: Optional[Engine] = None,
 ) -> List[ProviderAccount]:
     """
-    List provider accounts.
-    If org_name is specified, returns ONLY accounts explicitly assigned to that organization.
+    List provider accounts with tenant isolation (BRAH-SEC-001).
+    If org_name or active org is set, returns ONLY accounts assigned to that organization.
+    If no organization context is available, returns ONLY unassigned local developer accounts,
+    preventing global cross-tenant account enumeration.
     """
+    target_org = org_name or get_active_org_name()
     with get_session(engine) as session:
-        if org_name:
+        if target_org:
             org = session.scalar(
-                select(OrganizationModel).where(OrganizationModel.name == org_name)
+                select(OrganizationModel).where(OrganizationModel.name == target_org)
             )
             if not org:
-                raise ValueError(f"Organization '{org_name}' not found.")
+                raise ValueError(f"Organization '{target_org}' not found.")
 
             stmt = (
                 select(ProviderAccountModel)
@@ -142,8 +158,11 @@ def list_provider_accounts(
                 .options(selectinload(ProviderAccountModel.assignments).selectinload(OrganizationAssignmentModel.organization))
             )
         else:
+            # Unscoped caller: return ONLY unassigned local test accounts
             stmt = (
                 select(ProviderAccountModel)
+                .outerjoin(OrganizationAssignmentModel, OrganizationAssignmentModel.account_id == ProviderAccountModel.id)
+                .where(OrganizationAssignmentModel.id.is_(None))
                 .options(selectinload(ProviderAccountModel.assignments).selectinload(OrganizationAssignmentModel.organization))
             )
 
@@ -168,7 +187,11 @@ def assign_account_to_organization(
     org_name: str,
     engine: Optional[Engine] = None,
 ) -> None:
-    """Explicitly assign a provider account to an organization."""
+    """
+    Explicitly assign a provider account to an organization.
+    Enforces single-tenant ownership: an account already assigned to one organization
+    cannot be reassigned or co-opted by another organization (BRAH-SEC-001).
+    """
     with get_session(engine) as session:
         account = session.scalar(
             select(ProviderAccountModel).where(ProviderAccountModel.name == account_name)
@@ -181,6 +204,19 @@ def assign_account_to_organization(
         )
         if not org:
             raise ValueError(f"Organization '{org_name}' not found.")
+
+        # Check for cross-tenant reassignment attempts
+        other_assignment = session.scalar(
+            select(OrganizationAssignmentModel).where(
+                OrganizationAssignmentModel.account_id == account.id,
+                OrganizationAssignmentModel.organization_id != org.id,
+            )
+        )
+        if other_assignment:
+            raise PermissionError(
+                f"Account '{account_name}' is already assigned to another organization. "
+                "Cross-tenant account reassignment is forbidden (BRAH-SEC-001)."
+            )
 
         existing = session.scalar(
             select(OrganizationAssignmentModel).where(
@@ -267,8 +303,24 @@ def list_credentials(
     org_name: Optional[str] = None,
     engine: Optional[Engine] = None,
 ) -> List[CredentialRead]:
-    """List credentials with masked previews and health statuses."""
+    """
+    List credentials with masked previews and health statuses.
+    Enforces organization isolation: if org_name or active org is set, returns only
+    credentials for accounts assigned to that organization.
+    If no organization context is available, credentials belonging to org-assigned
+    accounts are strictly withheld to prevent information disclosure.
+    """
     with get_session(engine) as session:
+        target_org = org_name
+        if not target_org:
+            active = get_active_org_name()
+            if active:
+                active_org_record = session.scalar(
+                    select(OrganizationModel).where(OrganizationModel.name == active)
+                )
+                if active_org_record:
+                    target_org = active
+
         stmt = (
             select(CredentialModel, ProviderAccountModel.name)
             .join(ProviderAccountModel, ProviderAccountModel.id == CredentialModel.account_id)
@@ -277,16 +329,22 @@ def list_credentials(
         if account_name:
             stmt = stmt.where(ProviderAccountModel.name == account_name)
 
-        if org_name:
+        if target_org:
             org = session.scalar(
-                select(OrganizationModel).where(OrganizationModel.name == org_name)
+                select(OrganizationModel).where(OrganizationModel.name == target_org)
             )
             if not org:
-                raise ValueError(f"Organization '{org_name}' not found.")
+                raise ValueError(f"Organization '{target_org}' not found.")
             stmt = stmt.join(
                 OrganizationAssignmentModel,
                 OrganizationAssignmentModel.account_id == ProviderAccountModel.id,
             ).where(OrganizationAssignmentModel.organization_id == org.id)
+        else:
+            # Without organization context, exclude credentials belonging to org-assigned accounts
+            stmt = stmt.outerjoin(
+                OrganizationAssignmentModel,
+                OrganizationAssignmentModel.account_id == ProviderAccountModel.id,
+            ).where(OrganizationAssignmentModel.id.is_(None))
 
         rows = session.execute(stmt).all()
         return [

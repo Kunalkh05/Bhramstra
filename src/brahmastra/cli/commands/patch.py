@@ -77,8 +77,8 @@ def prompt_command_approval(
         console.print("[bold red]DENIED:[/bold red] Highly dangerous command cannot be auto-approved.")
         return False
 
-    if auto_approve and action.risk_level != CommandRiskLevel.DANGEROUS:
-        console.print("[bold yellow]Auto-approving command execution due to --yes flag.[/bold yellow]")
+    if auto_approve and action.risk_level == CommandRiskLevel.SAFE_READ:
+        console.print("[bold yellow]Auto-approving safe read-only command due to --yes flag.[/bold yellow]")
         return True
 
     return Confirm.ask(f"Execute this shell command?", default=False)

@@ -3,6 +3,9 @@ Ollama local runtime provider adapter.
 """
 
 import time
+import urllib.parse
+import ipaddress
+import socket
 from typing import List, Optional
 import httpx
 
@@ -32,7 +35,97 @@ class OllamaAdapter(ProviderInterface):
     """
 
     def __init__(self, endpoint: Optional[str] = None, timeout: float = 60.0):
-        self.endpoint = (endpoint or DEFAULT_OLLAMA_ENDPOINT).rstrip("/")
+        raw_endpoint = (endpoint or DEFAULT_OLLAMA_ENDPOINT).rstrip("/")
+        parsed = urllib.parse.urlsplit(raw_endpoint)
+
+        if parsed.scheme not in ("http", "https"):
+            raise ValueError(
+                f"Invalid endpoint scheme '{parsed.scheme}'. Only 'http' and 'https' are allowed (BRAH-SEC-005)."
+            )
+
+        raw_host = (parsed.hostname or "").lower()
+        if not raw_host:
+            raise ValueError("Endpoint host cannot be empty (BRAH-SEC-005).")
+
+        # Explicit blocklist for known cloud metadata hostname aliases
+        if raw_host in (
+            "169.254.169.254",
+            "metadata.google.internal",
+            "metadata.internal",
+            "instance-data",
+        ):
+            raise ValueError(
+                f"Access to cloud metadata endpoints ({raw_host}) is forbidden (BRAH-SEC-005 SSRF protection)."
+            )
+
+        port = parsed.port or (443 if parsed.scheme == "https" else 80)
+        ip_candidates = []
+
+        # 1. Check for integer, hex, or octal IP representations (e.g. 2852039166, 0xa9fea9fe)
+        try:
+            int_val = int(raw_host, 0)
+            if 0 <= int_val <= 0xFFFFFFFF:
+                ip_candidates.append(ipaddress.IPv4Address(int_val))
+        except (ValueError, TypeError):
+            pass
+
+        # 2. Check for direct IPv4 or IPv6 literal
+        cleaned_host = raw_host.strip("[]")
+        try:
+            direct_ip = ipaddress.ip_address(cleaned_host)
+            ip_candidates.append(direct_ip)
+        except ValueError:
+            pass
+
+        # 3. DNS resolution via socket.getaddrinfo to resolve hostnames and aliases (e.g. nip.io)
+        try:
+            addr_info = socket.getaddrinfo(raw_host, port, proto=socket.IPPROTO_TCP)
+            for entry in addr_info:
+                sockaddr = entry[4]
+                ip_str = sockaddr[0]
+                try:
+                    resolved_ip = ipaddress.ip_address(ip_str)
+                    ip_candidates.append(resolved_ip)
+                except ValueError:
+                    pass
+        except (socket.gaierror, OSError):
+            pass
+
+        # 4. Strict Network Policy Evaluation
+        for ip in ip_candidates:
+            # Handle IPv4-mapped IPv6 addresses (::ffff:169.254.169.254)
+            if isinstance(ip, ipaddress.IPv6Address) and ip.ipv4_mapped:
+                ip = ip.ipv4_mapped
+
+            # Allow local loopback addresses for Ollama daemon
+            if ip.is_loopback:
+                continue
+
+            # Reject AWS IMDS IPv6 (fd00:ec2::254)
+            if str(ip) == "fd00:ec2::254":
+                raise ValueError(
+                    f"Access to cloud metadata endpoints ({ip}) is forbidden (BRAH-SEC-005 SSRF protection)."
+                )
+
+            # Reject link-local cloud metadata addresses (169.254.0.0/16, fe80::/10)
+            if ip.is_link_local:
+                raise ValueError(
+                    f"Access to link-local cloud metadata endpoints ({ip}) is forbidden (BRAH-SEC-005 SSRF protection)."
+                )
+
+            # Reject private networks (10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16, fc00::/7)
+            if ip.is_private:
+                raise ValueError(
+                    f"Access to private internal network addresses ({ip}) is prohibited (BRAH-SEC-005 SSRF protection)."
+                )
+
+            # Reject multicast, reserved, or unspecified destinations
+            if ip.is_multicast or ip.is_reserved or ip.is_unspecified:
+                raise ValueError(
+                    f"Access to reserved or multicast network destinations ({ip}) is prohibited (BRAH-SEC-005 SSRF protection)."
+                )
+
+        self.endpoint = raw_endpoint
         self.timeout = timeout
 
     @property
@@ -87,7 +180,7 @@ class OllamaAdapter(ProviderInterface):
         }
 
         try:
-            with httpx.Client(timeout=self.timeout) as client:
+            with httpx.Client(timeout=self.timeout, follow_redirects=False) as client:
                 res = client.post(url, json=payload)
                 res.raise_for_status()
                 data = res.json()
@@ -115,7 +208,7 @@ class OllamaAdapter(ProviderInterface):
     def list_models(self, secret: Optional[str] = None) -> List[ModelInfo]:
         url = f"{self.endpoint}/api/tags"
         try:
-            with httpx.Client(timeout=10.0) as client:
+            with httpx.Client(timeout=10.0, follow_redirects=False) as client:
                 res = client.get(url)
                 res.raise_for_status()
                 data = res.json()
@@ -151,7 +244,7 @@ class OllamaAdapter(ProviderInterface):
         url = f"{self.endpoint}/api/tags"
         start = time.perf_counter()
         try:
-            with httpx.Client(timeout=5.0) as client:
+            with httpx.Client(timeout=5.0, follow_redirects=False) as client:
                 res = client.get(url)
                 res.raise_for_status()
             elapsed_ms = (time.perf_counter() - start) * 1000.0
