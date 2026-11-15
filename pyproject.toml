@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "brahmastra-ai"
-version = "0.1.0"
+version = "0.1.1"
 description = "Provider-independent AI orchestration platform and CLI coding assistant"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -57,6 +57,8 @@ Issues = "https://github.com/Kunalkh05/Bhramstra/issues"
 
 [project.scripts]
 brahmastra = "brahmastra.cli.app:main"
+brahma = "brahmastra.cli.app:main"
+bra = "brahmastra.cli.app:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
